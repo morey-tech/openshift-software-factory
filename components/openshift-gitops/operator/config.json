@@ -1,4 +1,4 @@
 {
   "namespace": "openshift-gitops-operator",
-  "disabled": "true"
+  "disabled": "false"
 }

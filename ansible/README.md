@@ -1,15 +1,16 @@
 # Ansible Bootstrap
 
-This directory contains the Ansible playbook and roles used to bootstrap an empty OpenShift cluster with the GitOps operator and the root Argo CD Application.
+This directory contains the Ansible playbook used to bootstrap an empty OpenShift cluster by applying the root Argo CD Application, which triggers the App-of-Apps pattern to deploy everything else.
 
 ## Usage
 
 ```bash
-ansible-playbook -i inventory playbook.yml
+ansible-playbook bootstrap.yaml
 ```
 
-## What the Bootstrap Does
+## Contents
 
-1. Installs the OpenShift GitOps operator (Subscription)
-2. Waits for the operator to become ready
-3. Applies the root Argo CD Application, which triggers the App-of-Apps pattern to deploy everything else
+| File | Purpose |
+|------|---------|
+| `bootstrap.yaml` | Playbook that applies the root Argo CD Application |
+| `manifests/root-application.yaml` | Root Argo CD Application manifest — points at the `bootstrap/` directory in this repo |

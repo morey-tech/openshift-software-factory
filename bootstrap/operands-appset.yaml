@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: operands
+  namespace: openshift-gitops
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/morey-tech/openshift-software-factory.git
+        revision: main
+        files:
+          - path: "components/*/instance/config.json"
+  template:
+    metadata:
+      name: "{{ index .path.segments 1 }}-instance"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/morey-tech/openshift-software-factory.git
+        targetRevision: main
+        path: "{{ .path.path }}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ .namespace }}"
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true

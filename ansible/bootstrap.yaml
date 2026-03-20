@@ -1,0 +1,10 @@
+---
+- name: Bootstrap OpenShift Software Factory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Apply the root Argo CD Application
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/manifests/root-application.yaml"

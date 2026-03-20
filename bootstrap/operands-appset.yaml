@@ -12,6 +12,12 @@ spec:
         revision: main
         files:
           - path: "components/*/instance/config.json"
+      selector:
+        matchExpressions:
+          - key: disabled
+            operator: NotIn
+            values:
+              - "true"
   template:
     metadata:
       name: "{{ index .path.segments 1 }}-instance"

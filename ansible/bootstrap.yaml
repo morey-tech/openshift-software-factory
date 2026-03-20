@@ -1,9 +1,68 @@
 ---
 - name: Bootstrap OpenShift Software Factory
-  hosts: localhost
-  connection: local
+  hosts: ocp-gpu.rh-lab.morey.tech
   gather_facts: false
   tasks:
+    # --- OpenShift GitOps Operator ---
+    - name: Create openshift-gitops-operator namespace
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/../components/openshift-gitops/operator/namespace.yaml"
+
+    - name: Apply OperatorGroup
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/../components/openshift-gitops/operator/operator-group.yaml"
+
+    - name: Apply GitOps operator Subscription
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/../components/openshift-gitops/operator/subscription.yaml"
+
+    - name: Wait for GitOps operator to be ready
+      kubernetes.core.k8s_info:
+        api_version: operators.coreos.com/v1alpha1
+        kind: ClusterServiceVersion
+        namespace: openshift-gitops-operator
+        label_selectors:
+          - "operators.coreos.com/openshift-gitops-operator.openshift-gitops-operator="
+      register: csv_result
+      until:
+        - csv_result.resources | length > 0
+        - csv_result.resources[0].status.phase | default('') == 'Succeeded'
+      retries: 30
+      delay: 10
+
+    # --- OpenShift GitOps Instance ---
+    - name: Create openshift-gitops namespace
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/namespace.yaml"
+
+    - name: Apply ClusterRole for Argo CD
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/cluster-role.yaml"
+
+    - name: Apply ArgoCD instance
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/argocd.yaml"
+
+    - name: Wait for ArgoCD instance to be ready
+      kubernetes.core.k8s_info:
+        api_version: argoproj.io/v1beta1
+        kind: ArgoCD
+        name: software-factory-argocd
+        namespace: openshift-gitops
+      register: argocd_result
+      until:
+        - argocd_result.resources | length > 0
+        - argocd_result.resources[0].status.phase | default('') == 'Available'
+      retries: 30
+      delay: 10
+
+    # --- Root Application ---
     - name: Apply the root Argo CD Application
       kubernetes.core.k8s:
         state: present

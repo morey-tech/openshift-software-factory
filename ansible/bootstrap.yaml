@@ -7,7 +7,11 @@
     - name: Create openshift-gitops-operator namespace
       kubernetes.core.k8s:
         state: present
-        src: "{{ playbook_dir }}/../components/openshift-gitops/operator/namespace.yaml"
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: openshift-gitops-operator
 
     - name: Apply OperatorGroup
       kubernetes.core.k8s:
@@ -37,7 +41,11 @@
     - name: Create openshift-gitops namespace
       kubernetes.core.k8s:
         state: present
-        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/namespace.yaml"
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: openshift-gitops
 
     - name: Apply ClusterRole for Argo CD
       kubernetes.core.k8s:

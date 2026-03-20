@@ -6,7 +6,7 @@ This folder is managed by the `operators` ApplicationSet.
 
 | File | Purpose |
 |------|---------|
-| `namespace.yaml` | Creates the `openshift-gitops-operator` namespace |
+| `config.json` | Declares the target namespace (`openshift-gitops-operator`) for the Argo CD Application |
 | `operator-group.yaml` | OperatorGroup scoped to `openshift-gitops-operator` namespace |
 | `subscription.yaml` | OLM Subscription for `openshift-gitops-operator` from `redhat-operators` |
 

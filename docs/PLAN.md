@@ -9,11 +9,13 @@ Ansible Playbook
   └── Installs OpenShift GitOps Operator
         └── Creates Root Argo CD Application
               └── Deploys 2 ApplicationSets
-                    ├── Operators AppSet  → scans components/*/operator/
-                    └── Operands AppSet   → scans components/*/instance/
+                    ├── Operators AppSet  → reads config.json from components/*/operator/
+                    └── Operands AppSet   → reads config.json from components/*/instance/
 ```
 
-Adding a new component = add a folder under `components/` with `operator/` and/or `instance/` subdirectories. The ApplicationSets automatically pick it up.
+Adding a new component = add a folder under `components/` with `operator/` and/or `instance/` subdirectories, each containing a `config.json` that declares the component's name, namespace, and any other metadata. The ApplicationSets use the **git files generator** to discover these config files and template Applications accordingly.
+
+> **Why config.json?** OpenShift operators are often picky about namespaces (e.g. OpenShift Virtualization's operator `kubevirt-hyperconverged` must deploy into `openshift-cnv`). Folder names should be human-friendly, not constrained by namespace requirements. See [ADR-0001](decisions/0001-use-git-files-generator-for-applicationsets.md) for the full rationale.
 
 ## Proposed Directory Structure
 
@@ -27,33 +29,65 @@ Adding a new component = add a folder under `components/` with `operator/` and/o
 │       └── bootstrap-gitops/       # Install GitOps operator + create root App
 ├── bootstrap/
 │   ├── root-application.yaml       # Root Argo CD Application (deploys the AppSets)
-│   ├── operators-appset.yaml       # ApplicationSet: components/*/operator/
-│   └── operands-appset.yaml        # ApplicationSet: components/*/instance/
+│   ├── operators-appset.yaml       # ApplicationSet: git files generator → components/*/operator/config.json
+│   └── operands-appset.yaml        # ApplicationSet: git files generator → components/*/instance/config.json
 ├── components/
 │   ├── openshift-gitops/
-│   │   ├── operator/               # Subscription, OperatorGroup
-│   │   └── instance/               # ArgoCD CR, RBAC, AppProjects
+│   │   ├── operator/
+│   │   │   ├── config.json         # { "name": "openshift-gitops", "namespace": "openshift-gitops-operator" }
+│   │   │   └── *.yaml              # Subscription, OperatorGroup
+│   │   └── instance/
+│   │       ├── config.json
+│   │       └── *.yaml              # ArgoCD CR, RBAC, AppProjects
 │   ├── openshift-pipelines/
-│   │   ├── operator/               # Subscription, OperatorGroup
-│   │   └── instance/               # TektonConfig, shared Tasks/Pipelines
+│   │   ├── operator/
+│   │   │   ├── config.json
+│   │   │   └── *.yaml              # Subscription, OperatorGroup
+│   │   └── instance/
+│   │       ├── config.json
+│   │       └── *.yaml              # TektonConfig, shared Tasks/Pipelines
 │   ├── quay/
-│   │   ├── operator/               # Subscription, OperatorGroup
-│   │   └── instance/               # QuayRegistry CR
+│   │   ├── operator/
+│   │   │   ├── config.json
+│   │   │   └── *.yaml              # Subscription, OperatorGroup
+│   │   └── instance/
+│   │       ├── config.json
+│   │       └── *.yaml              # QuayRegistry CR
 │   ├── developer-hub/
-│   │   ├── operator/               # Subscription, OperatorGroup
-│   │   └── instance/               # Backstage CR, app-config
+│   │   ├── operator/
+│   │   │   ├── config.json
+│   │   │   └── *.yaml              # Subscription, OperatorGroup
+│   │   └── instance/
+│   │       ├── config.json
+│   │       └── *.yaml              # Backstage CR, app-config
 │   ├── dev-spaces/
-│   │   ├── operator/               # Subscription, OperatorGroup
-│   │   └── instance/               # CheCluster CR
+│   │   ├── operator/
+│   │   │   ├── config.json
+│   │   │   └── *.yaml              # Subscription, OperatorGroup
+│   │   └── instance/
+│   │       ├── config.json
+│   │       └── *.yaml              # CheCluster CR
 │   ├── cert-manager/               # (optional)
 │   │   ├── operator/
-│   │   └── instance/               # ClusterIssuer
+│   │   │   ├── config.json
+│   │   │   └── *.yaml
+│   │   └── instance/
+│   │       ├── config.json
+│   │       └── *.yaml              # ClusterIssuer
 │   ├── external-secrets/           # (optional)
 │   │   ├── operator/
-│   │   └── instance/               # SecretStore
+│   │   │   ├── config.json
+│   │   │   └── *.yaml
+│   │   └── instance/
+│   │       ├── config.json
+│   │       └── *.yaml              # SecretStore
 │   └── external-dns/               # (optional)
 │       ├── operator/
+│       │   ├── config.json
+│       │   └── *.yaml
 │       └── instance/
+│           ├── config.json
+│           └── *.yaml
 ```
 
 ---
@@ -82,11 +116,13 @@ This is the critical path — everything else depends on Argo CD being up and ru
 - [ ] **Root Application** (`bootstrap/root-application.yaml`)
   - Points at the `bootstrap/` directory in this repo
 - [ ] **Operators ApplicationSet** (`bootstrap/operators-appset.yaml`)
-  - Git directory generator scanning `components/*/operator/`
-  - Generates one Argo CD Application per operator
+  - Git files generator reading `config.json` from `components/*/operator/`
+  - Each `config.json` declares `name` and `namespace` at minimum
+  - Generates one Argo CD Application per operator, targeting the declared namespace
 - [ ] **Operands ApplicationSet** (`bootstrap/operands-appset.yaml`)
-  - Git directory generator scanning `components/*/instance/`
-  - Generates one Argo CD Application per operand/service
+  - Git files generator reading `config.json` from `components/*/instance/`
+  - Each `config.json` declares `name` and `namespace` at minimum
+  - Generates one Argo CD Application per operand/service, targeting the declared namespace
 
 ### Phase 2 — Core Operators
 

@@ -1,8 +1,16 @@
-# dev-spaces — operator
+# Dev Spaces — Operator
 
 This folder is managed by the `operators` ApplicationSet.
 
 ## Contents
 
-- `config.json` — declares the Argo CD Application name and target namespace
-- `*.yaml` — Kubernetes manifests for this component's operator
+| File | Purpose |
+|------|---------|
+| `config.json` | Declares the target namespace (`openshift-operators`) for the Argo CD Application |
+| `subscription.yaml` | OLM Subscription for the `devspaces` operator from `redhat-operators` |
+
+## Notes
+
+- **Channel:** `stable`
+- **Install plan approval:** Automatic
+- **Namespace:** Installs into `openshift-operators` (global operator namespace) — no OperatorGroup needed

@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by [ADR-0009](0009-manifests-subdirectory-for-appset-source-path.md)
 date: 2026-03-21
 ---
 

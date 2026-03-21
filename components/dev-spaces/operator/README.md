@@ -7,7 +7,7 @@ This folder is managed by the `operators` ApplicationSet.
 | File | Purpose |
 |------|---------|
 | `config.json` | Declares the target namespace (`openshift-operators`) for the Argo CD Application |
-| `subscription.yaml` | OLM Subscription for the `devspaces` operator from `redhat-operators` |
+| `manifests/subscription.yaml` | OLM Subscription for the `devspaces` operator from `redhat-operators` |
 
 ## Notes
 

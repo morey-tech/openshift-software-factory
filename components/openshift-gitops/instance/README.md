@@ -7,8 +7,10 @@ This folder is managed by the `operands` ApplicationSet.
 | File | Purpose |
 |------|---------|
 | `config.json` | Declares the target namespace (`openshift-gitops`) for the Argo CD Application |
-| `argocd.yaml` | ArgoCD CR (`software-factory-argocd`) — customized instance configuration |
-| `cluster-role.yaml` | ClusterRole granting Argo CD full cluster management and pod exec access |
+| `manifests/argocd.yaml` | ArgoCD CR (`software-factory-argocd`) — customized instance configuration |
+| `manifests/cluster-role.yaml` | ClusterRole granting Argo CD full cluster management and pod exec access |
+| `manifests/cluster-admins-group.yaml` | OpenShift Group with `admin` user for ArgoCD RBAC |
+| `manifests/cluster-role-binding.yaml` | ClusterRoleBinding granting `cluster-admins` group the `cluster-admin` role |
 
 ## ArgoCD Instance Configuration
 

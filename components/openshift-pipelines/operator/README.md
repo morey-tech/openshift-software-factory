@@ -7,11 +7,11 @@ This folder is managed by the `operators` ApplicationSet.
 | File | Purpose |
 |------|---------|
 | `config.json` | Declares the target namespace (`openshift-operators`) for the Argo CD Application |
-| `subscription.yaml` | OLM Subscription for the `openshift-pipelines-operator-rh` operator from `redhat-operators` |
-| `kustomization.yaml` | Kustomize component enabling the Pipelines console plugin |
-| `console-plugin.yaml` | `ConsolePlugin` CR to register the Pipelines UI in the OpenShift console |
-| `console-plugin-job.yaml` | `Job`, `ServiceAccount`, and RBAC to patch the cluster console and activate the plugin |
-| `console-plugin-job.sh` | Shell script executed by the job to enable the plugin via `oc patch` |
+| `manifests/subscription.yaml` | OLM Subscription for the `openshift-pipelines-operator-rh` operator from `redhat-operators` |
+| `manifests/kustomization.yaml` | Kustomize component enabling the Pipelines console plugin |
+| `manifests/console-plugin.yaml` | `ConsolePlugin` CR to register the Pipelines UI in the OpenShift console |
+| `manifests/console-plugin-job.yaml` | `Job`, `ServiceAccount`, and RBAC to patch the cluster console and activate the plugin |
+| `manifests/console-plugin-job.sh` | Shell script executed by the job to enable the plugin via `oc patch` |
 
 ## Notes
 

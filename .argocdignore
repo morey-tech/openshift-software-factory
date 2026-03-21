@@ -1,3 +1,0 @@
-# Exclude ApplicationSet generator config from ArgoCD manifest processing.
-# See docs/decisions/0008-argocdignore-for-config-json-exclusion.md
-config.json

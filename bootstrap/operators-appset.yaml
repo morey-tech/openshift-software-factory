@@ -28,8 +28,8 @@ spec:
       source:
         repoURL: https://github.com/morey-tech/openshift-software-factory.git
         targetRevision: main
-        path: "{{ .path.path }}"
-        # See ../docs/decisions/0008-argocdignore-for-config-json-exclusion.md
+        path: "{{ .path.path }}/manifests"
+        # See ../docs/decisions/0009-manifests-subdirectory-for-appset-source-path.md
       destination:
         server: https://kubernetes.default.svc
         namespace: "{{ .namespace }}"

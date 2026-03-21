@@ -6,10 +6,10 @@ This folder is managed by the `operands` ApplicationSet.
 
 | File | Purpose |
 |------|---------|
-| `config.json` | Declares the target namespace (`openshift-operators`) for the Argo CD Application |
-| `kustomization.yaml` | Kustomize overlay targeting `openshift-devspaces` namespace |
-| `checluster.yaml` | CheCluster CR — core Dev Spaces configuration |
-| `vscode-editor-configurations.yaml` | ConfigMap with VS Code editor settings and recommended extensions |
+| `config.json` | Declares the target namespace (`openshift-devspaces`) for the Argo CD Application |
+| `manifests/kustomization.yaml` | Kustomize overlay targeting `openshift-devspaces` namespace |
+| `manifests/checluster.yaml` | CheCluster CR — core Dev Spaces configuration |
+| `manifests/vscode-editor-configurations.yaml` | ConfigMap with VS Code editor settings and recommended extensions |
 
 ## CheCluster Configuration
 

@@ -20,6 +20,11 @@ spec:
             operator: NotIn
             values:
               - "true"
+          # See ../docs/decisions/0011-decouple-gitops-instance-from-bootstrap-cascade.md
+          - key: standalone
+            operator: NotIn
+            values:
+              - "true"
   template:
     metadata:
       name: "{{ index .path.segments 1 }}-operator"

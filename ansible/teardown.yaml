@@ -34,6 +34,16 @@
       retries: 60
       delay: 10
 
+    # The standalone Application has no cascade finalizer so deletion is instant.
+    # See ../docs/decisions/0011-decouple-gitops-instance-from-bootstrap-cascade.md
+    - name: Delete standalone openshift-gitops-instance Application
+      kubernetes.core.k8s:
+        state: absent
+        api_version: argoproj.io/v1alpha1
+        kind: Application
+        name: openshift-gitops-instance
+        namespace: openshift-gitops
+
     # CSVs are created by OLM and are not managed by ArgoCD, so they are not
     # removed by the cascade above. For the shared openshift-operators namespace
     # (cannot be deleted), CSVs must be explicitly removed. Namespace deletion
@@ -56,20 +66,37 @@
       loop_control:
         label: "{{ item.metadata.name }}"
 
-    # Namespace termination cleans up all remaining resources, including CSVs
-    # in dedicated operator namespaces (e.g. openshift-gitops-operator).
-    - name: Delete project namespaces
+    # openshift-gitops is deleted and fully waited on before openshift-gitops-operator.
+    # The GitOps operator (in openshift-gitops-operator) must remain alive while
+    # openshift-gitops terminates so it can process the ArgoCD CR teardown finalizer.
+    - name: Delete openshift-gitops namespace
+      kubernetes.core.k8s:
+        state: absent
+        api_version: v1
+        kind: Namespace
+        name: openshift-gitops
+
+    - name: Wait for openshift-gitops namespace to terminate
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Namespace
+        name: openshift-gitops
+      register: ns_result
+      until: ns_result.resources | length == 0
+      retries: 60
+      delay: 10
+
+    - name: Delete remaining project namespaces
       kubernetes.core.k8s:
         state: absent
         api_version: v1
         kind: Namespace
         name: "{{ item }}"
       loop:
-        - openshift-gitops
         - openshift-gitops-operator
         - openshift-devspaces
 
-    - name: Wait for project namespaces to be fully terminated
+    - name: Wait for remaining project namespaces to terminate
       kubernetes.core.k8s_info:
         api_version: v1
         kind: Namespace
@@ -79,6 +106,5 @@
       retries: 60
       delay: 10
       loop:
-        - openshift-gitops
         - openshift-gitops-operator
         - openshift-devspaces

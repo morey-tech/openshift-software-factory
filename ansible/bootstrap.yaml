@@ -88,6 +88,38 @@
       retries: 30
       delay: 10
 
+    # --- openshift-gitops-instance Application (standalone) ---
+    # Applied outside the bootstrap root Application so it is not in the cascade
+    # chain. This keeps the ArgoCD controller alive while all other Applications
+    # are cascade-deleted during teardown.
+    # finalizers: [] is required — if the cascade finalizer were set, deleting
+    # this Application during teardown would attempt to cascade-delete the ArgoCD
+    # CR, killing the controller that must process those same finalizers.
+    # See ../docs/decisions/0011-decouple-gitops-instance-from-bootstrap-cascade.md
+    - name: Apply standalone openshift-gitops-instance Application
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: openshift-gitops-instance
+            namespace: openshift-gitops
+            finalizers: []
+          spec:
+            project: default
+            source:
+              repoURL: https://github.com/morey-tech/openshift-software-factory.git
+              targetRevision: main
+              path: components/openshift-gitops/instance/manifests
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: openshift-gitops
+            syncPolicy:
+              automated:
+                selfHeal: true
+                prune: true
+
     # --- Root Application ---
     # See ../docs/decisions/0002-deploy-root-application-with-ansible.md
     - name: Apply the root Argo CD Application

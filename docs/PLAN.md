@@ -127,7 +127,7 @@ This is the critical path — everything else depends on Argo CD being up and ru
 Each operator just needs a Subscription and OperatorGroup in the appropriate namespace.
 
 - [x] **OpenShift Pipelines** (`components/openshift-pipelines/operator/`)
-- [ ] **Quay** (`components/quay/operator/`)
+- [x] **Quoay** (`components/quay/operator/`)
 - [x] **Developer Hub** (`components/developer-hub/operator/`)
 - [x] **Dev Spaces** (`components/dev-spaces/operator/`)
 

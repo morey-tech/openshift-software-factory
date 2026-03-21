@@ -128,7 +128,7 @@ Each operator just needs a Subscription and OperatorGroup in the appropriate nam
 
 - [x] **OpenShift Pipelines** (`components/openshift-pipelines/operator/`)
 - [ ] **Quay** (`components/quay/operator/`)
-- [ ] **Developer Hub** (`components/developer-hub/operator/`)
+- [x] **Developer Hub** (`components/developer-hub/operator/`)
 - [x] **Dev Spaces** (`components/dev-spaces/operator/`)
 
 ### Phase 3 — Core Operands

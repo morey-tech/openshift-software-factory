@@ -7,6 +7,7 @@ spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   generators:
+    # See ../docs/decisions/0001-use-git-files-generator-for-applicationsets.md
     - git:
         repoURL: https://github.com/morey-tech/openshift-software-factory.git
         revision: main
@@ -14,6 +15,7 @@ spec:
           - path: "components/*/operator/config.json"
       selector:
         matchExpressions:
+          # See ../docs/decisions/0003-disable-flag-in-config-json.md
           - key: disabled
             operator: NotIn
             values:
@@ -35,4 +37,5 @@ spec:
           selfHeal: true
           prune: true
         syncOptions:
+          # See ../docs/decisions/0004-auto-create-namespaces-in-applicationsets.md
           - CreateNamespace=true

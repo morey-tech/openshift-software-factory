@@ -3,6 +3,7 @@
   hosts: ocp-gpu.rh-lab.morey.tech
   gather_facts: false
   module_defaults:
+    # See ../docs/decisions/0005-explicit-kubeconfig-for-ansible-k8s-modules.md
     kubernetes.core.k8s:
       kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default('~/.kube/config', true) }}"
       validate_certs: "{{ lookup('env', 'K8S_AUTH_VERIFY_SSL') | default('false', true) }}"
@@ -78,6 +79,7 @@
       delay: 10
 
     # --- Root Application ---
+    # See ../docs/decisions/0002-deploy-root-application-with-ansible.md
     - name: Apply the root Argo CD Application
       kubernetes.core.k8s:
         state: present

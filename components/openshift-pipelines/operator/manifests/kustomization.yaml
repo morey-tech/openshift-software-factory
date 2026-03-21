@@ -4,6 +4,7 @@ kind: Component
 resources:
   - console-plugin-job.yaml
   - console-plugin.yaml
+  - subscription.yaml
 
 generatorOptions:
   disableNameSuffixHash: true

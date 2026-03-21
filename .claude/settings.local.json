@@ -1,3 +1,7 @@
 {
-  "apiKeyHelper": "bash -c 'echo $ANTHROPIC_API_KEY'"
+  "apiKeyHelper": "bash -c 'echo $ANTHROPIC_API_KEY'",
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  }
 }

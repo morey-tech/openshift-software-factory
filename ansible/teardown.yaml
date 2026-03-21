@@ -1,0 +1,67 @@
+---
+- name: Teardown OpenShift Software Factory Bootstrap
+  hosts: ocp-gpu.rh-lab.morey.tech
+  gather_facts: false
+  module_defaults:
+    # See ../docs/decisions/0005-explicit-kubeconfig-for-ansible-k8s-modules.md
+    kubernetes.core.k8s:
+      kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default('~/.kube/config', true) }}"
+      validate_certs: "{{ lookup('env', 'K8S_AUTH_VERIFY_SSL') | default('false', true) }}"
+    kubernetes.core.k8s_info:
+      kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default('~/.kube/config', true) }}"
+      validate_certs: "{{ lookup('env', 'K8S_AUTH_VERIFY_SSL') | default('false', true) }}"
+  tasks:
+    - name: Delete root ArgoCD Application
+      kubernetes.core.k8s:
+        state: absent
+        api_version: argoproj.io/v1alpha1
+        kind: Application
+        name: bootstrap
+        namespace: openshift-gitops
+
+    - name: Wait for root Application to be fully removed
+      kubernetes.core.k8s_info:
+        api_version: argoproj.io/v1alpha1
+        kind: Application
+        name: bootstrap
+        namespace: openshift-gitops
+      register: app_result
+      until: app_result.resources | length == 0
+      retries: 60
+      delay: 10
+
+    - name: Delete GitOps operator Subscription
+      kubernetes.core.k8s:
+        state: absent
+        api_version: operators.coreos.com/v1alpha1
+        kind: Subscription
+        name: openshift-gitops-operator
+        namespace: openshift-gitops-operator
+
+    - name: Get GitOps operator CSV
+      kubernetes.core.k8s_info:
+        api_version: operators.coreos.com/v1alpha1
+        kind: ClusterServiceVersion
+        namespace: openshift-gitops-operator
+        label_selectors:
+          - "operators.coreos.com/openshift-gitops-operator.openshift-gitops-operator="
+      register: csv_result
+
+    - name: Delete GitOps operator CSV
+      kubernetes.core.k8s:
+        state: absent
+        api_version: operators.coreos.com/v1alpha1
+        kind: ClusterServiceVersion
+        name: "{{ csv_result.resources[0].metadata.name }}"
+        namespace: openshift-gitops-operator
+      when: csv_result.resources | length > 0
+
+    - name: Delete openshift-gitops namespaces
+      kubernetes.core.k8s:
+        state: absent
+        api_version: v1
+        kind: Namespace
+        name: "{{ item }}"
+      loop:
+        - openshift-gitops
+        - openshift-gitops-operator

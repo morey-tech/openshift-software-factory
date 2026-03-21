@@ -81,4 +81,22 @@
     - name: Apply the root Argo CD Application
       kubernetes.core.k8s:
         state: present
-        src: "{{ playbook_dir }}/manifests/root-application.yaml"
+        definition:
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: bootstrap
+            namespace: openshift-gitops
+          spec:
+            project: default
+            source:
+              repoURL: https://github.com/morey-tech/openshift-software-factory.git
+              targetRevision: main
+              path: bootstrap
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: openshift-gitops
+            syncPolicy:
+              automated:
+                selfHeal: true
+                prune: true

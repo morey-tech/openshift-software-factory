@@ -75,6 +75,7 @@ spec:
   rbac:
     defaultPolicy: ""
     policy: |
+      g, admin, role:admin
       g, cluster-admins, role:admin
       p, role:admin, exec, create, */*, allow
     scopes: '[groups]'

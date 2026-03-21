@@ -135,9 +135,8 @@ Each operator just needs a Subscription and OperatorGroup in the appropriate nam
 
 Custom Resources and configuration for each operator's managed service.
 
-- [ ] **OpenShift Pipelines** (`components/openshift-pipelines/instance/`)
-  - TektonConfig CR
-  - Shared ClusterTasks / Pipelines (if any)
+- [x] **OpenShift Pipelines** (`components/openshift-pipelines/instance/`)
+  - No manifests required — operator auto-provisions `TektonConfig`, `TektonPipeline`, and `TektonTrigger` on install
 - [ ] **Quay** (`components/quay/instance/`)
   - QuayRegistry CR
 - [ ] **Developer Hub** (`components/developer-hub/instance/`)

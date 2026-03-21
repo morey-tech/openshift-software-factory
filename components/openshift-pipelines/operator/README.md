@@ -15,7 +15,8 @@ This folder is managed by the `operators` ApplicationSet.
 
 ## Notes
 
-- **Channel:** `stable`
+- **Channel:** `pipelines-1.21`
 - **Install plan approval:** Automatic
 - **Namespace:** Installs into `openshift-operators` (global operator namespace) — no OperatorGroup needed
 - **Console plugin:** Sourced from [redhat-cop/gitops-catalog](https://github.com/redhat-cop/gitops-catalog/tree/main/openshift-pipelines-operator/components/enable-console-plugin)
+- **Auto-provisioned instance:** The operator automatically creates a `TektonConfig/config` CR on install, which in turn provisions `TektonPipeline/pipeline` and `TektonTrigger/trigger`. No instance manifests are needed — an `instance/` component for OpenShift Pipelines is not required.

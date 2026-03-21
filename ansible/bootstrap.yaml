@@ -2,6 +2,13 @@
 - name: Bootstrap OpenShift Software Factory
   hosts: ocp-gpu.rh-lab.morey.tech
   gather_facts: false
+  module_defaults:
+    kubernetes.core.k8s:
+      kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default('~/.kube/config', true) }}"
+      validate_certs: "{{ lookup('env', 'K8S_AUTH_VERIFY_SSL') | default('false', true) }}"
+    kubernetes.core.k8s_info:
+      kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default('~/.kube/config', true) }}"
+      validate_certs: "{{ lookup('env', 'K8S_AUTH_VERIFY_SSL') | default('false', true) }}"
   tasks:
     # --- OpenShift GitOps Operator ---
     - name: Create openshift-gitops-operator namespace

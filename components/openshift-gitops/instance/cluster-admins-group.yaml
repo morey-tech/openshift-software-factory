@@ -1,0 +1,7 @@
+# See docs/decisions/0006-cluster-admins-group-for-argocd-rbac.md
+apiVersion: user.openshift.io/v1
+kind: Group
+metadata:
+  name: cluster-admins
+users:
+  - admin

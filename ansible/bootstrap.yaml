@@ -60,6 +60,16 @@
         state: present
         src: "{{ playbook_dir }}/../components/openshift-gitops/instance/cluster-role.yaml"
 
+    - name: Apply cluster-admins group
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/cluster-admins-group.yaml"
+
+    - name: Apply ClusterRoleBinding for cluster-admins group
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/cluster-role-binding.yaml"
+
     - name: Apply ArgoCD instance
       kubernetes.core.k8s:
         state: present

@@ -72,10 +72,10 @@ spec:
       enabled: false
     route:
       enabled: false
+  # See docs/decisions/0006-cluster-admins-group-for-argocd-rbac.md
   rbac:
     defaultPolicy: ""
     policy: |
-      g, admin, role:admin
       g, cluster-admins, role:admin
       p, role:admin, exec, create, */*, allow
     scopes: '[groups]'

@@ -1,0 +1,30 @@
+schemaVersion: 2.2.0
+metadata:
+  name: openshift-software-factory
+  description: OpenShift Software Factory development environment
+components:
+  - name: tools
+    container:
+      image: quay.io/devfile/universal-developer-image:ubi9-latest
+      memoryLimit: 4Gi
+      mountSources: true
+      env:
+        - name: ANSIBLE_CONFIG
+          value: /projects/openshift-software-factory/ansible/ansible.cfg
+commands:
+  - id: install-ansible
+    exec:
+      label: Install Ansible
+      component: tools
+      commandLine: pip install --user -r ansible/requirements.txt
+      workingDir: /projects/openshift-software-factory
+  - id: bootstrap
+    exec:
+      label: Run Bootstrap Playbook
+      component: tools
+      commandLine: ansible-playbook bootstrap.yaml
+      workingDir: /projects/openshift-software-factory/ansible
+events:
+  postStart:
+    - install-ansible
+?

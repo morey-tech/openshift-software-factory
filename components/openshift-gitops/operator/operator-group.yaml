@@ -5,5 +5,3 @@ metadata:
   namespace: openshift-gitops-operator
 spec:
   upgradeStrategy: Default
-  targetNamespaces:
-    - openshift-gitops-operator

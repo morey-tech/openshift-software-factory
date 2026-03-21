@@ -137,7 +137,7 @@ Custom Resources and configuration for each operator's managed service.
 
 - [x] **OpenShift Pipelines** (`components/openshift-pipelines/instance/`)
   - No manifests required — operator auto-provisions `TektonConfig`, `TektonPipeline`, and `TektonTrigger` on install
-- [ ] **Quay** (`components/quay/instance/`)
+- [x] **Quay** (`components/quay/instance/`)
   - QuayRegistry CR
 - [ ] **Developer Hub** (`components/developer-hub/instance/`)
   - Backstage CR

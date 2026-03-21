@@ -1,0 +1,31 @@
+# Reference: https://docs.redhat.com/en/documentation/red_hat_quay/3.12/html-single/deploying_the_red_hat_quay_operator_on_openshift_container_platform/
+# See docs/decisions/0012-quay-registry-component-configuration.md
+apiVersion: quay.redhat.com/v1
+kind: QuayRegistry
+metadata:
+  name: registry
+  namespace: quay-operator
+spec:
+  components:
+    - kind: quay
+      managed: true
+    - kind: postgres
+      managed: true
+    - kind: clair             # Vulnerability scanning — feeds into ACS pipeline gate (Phase 6)
+      managed: true
+    - kind: clairpostgres
+      managed: true
+    - kind: redis
+      managed: true
+    - kind: horizontalpodautoscaler  # Scale under pipeline push/pull load
+      managed: true
+    - kind: route             # Expose registry externally for cluster image pulls
+      managed: true
+    - kind: mirror
+      managed: false          # Not needed — images are pushed by pipelines, not mirrored
+    - kind: monitoring
+      managed: true
+    - kind: objectstorage     # Provisions an ObjectBucketClaim via NooBaa/ODF
+      managed: true
+    - kind: tls
+      managed: true

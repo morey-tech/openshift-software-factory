@@ -13,4 +13,5 @@ ansible-playbook bootstrap.yaml
 | File | Purpose |
 |------|---------|
 | `bootstrap.yaml` | Playbook that applies the root Argo CD Application |
+| `teardown.yaml` | Playbook that removes the root Application, GitOps operator, and associated namespaces to start fresh |
 | `manifests/root-application.yaml` | Root Argo CD Application manifest — points at the `bootstrap/` directory in this repo |

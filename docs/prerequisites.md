@@ -28,6 +28,19 @@ oc get storageclass
 
 The default storage class is marked with the annotation `storageclass.kubernetes.io/is-default-class: "true"`.
 
+## Object Storage (Quay)
+
+Quay requires object storage and provisions an `ObjectBucketClaim` to request a bucket. This requires the `ObjectBucketClaim` CRD to be available on the cluster, which is provided by [NooBaa](https://www.noobaa.io/) — typically deployed as part of [OpenShift Data Foundation (ODF)](https://www.redhat.com/en/technologies/cloud-computing/openshift-data-foundation).
+
+On the Red Hat Demo Platform, ODF (including NooBaa) is included by default. On other clusters, install ODF or deploy NooBaa standalone before bootstrapping.
+
+Verify NooBaa and the `ObjectBucketClaim` CRD are available with:
+
+```bash
+oc get noobaa -n openshift-storage
+oc get crd objectbucketclaims.objectbucket.io
+```
+
 ## Ansible
 
 The following Python packages are required on the control machine:

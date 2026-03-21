@@ -6,7 +6,8 @@
   },
   "permissions": {
     "allow": [
-      "Bash(oc annotate applicationset:*)"
+      "Bash(oc annotate applicationset:*)",
+      "WebFetch(domain:docs.redhat.com)"
     ]
   }
 }

@@ -154,7 +154,36 @@ These are not required for the core software factory but elevate the setup.
 - [ ] **external-dns** — operator + DNS config (works with cert-manager)
 - [ ] **OAuth integration** — configure Developer Hub and Dev Spaces to use an external identity provider
 
-### Phase 5 — Stretch Goals
+### Phase 5 — Golden Path Template
+
+A working end-to-end developer workflow: Developer Hub scaffolds a new application, Pipelines build and test it, Argo CD deploys it, and Dev Spaces provides a ready-to-code workspace. See [capabilities.md](capabilities.md) for the full rationale.
+
+- [ ] **Developer Hub Software Template** — a golden path template in the Developer Hub catalog that scaffolds a new application with:
+  - Source repo (GitHub/Gitlab) with a pre-configured `Containerfile` and Kubernetes manifests
+  - A `devfile.yaml` referencing the Dev Spaces default workspace definition
+  - A stub `Tekton Pipeline` and `PipelineRun` trigger (webhook or manual)
+  - An Argo CD `Application` pointing at the scaffolded repo's manifests directory
+- [ ] **Tekton Pipeline — Build & Push** — a reusable `Pipeline` (stored in this repo) that:
+  - Clones source, builds a container image, and pushes to Quay
+  - Runs unit tests and linting
+  - Updates the image tag in the deployment manifests (GitOps write-back)
+- [ ] **Argo CD auto-deploy** — each scaffolded application gets its own Argo CD `Application` (or is registered in an existing `ApplicationSet`) that watches the manifests directory and deploys on merge to main
+- [ ] **Dev Spaces devfile defaults** — a default `devfile.yaml` in this repo (or a dedicated devfile registry) that:
+  - Defines the base development container image with common tooling pre-installed
+  - Pre-installs VS Code extensions (linting, Git, language support)
+  - Mounts workspace settings and dotfiles
+
+### Phase 6 — ACS Integration
+
+Deploy Red Hat Advanced Cluster Security (ACS) and wire it into the CI/CD pipeline as a shift-left security gate. See [capabilities.md](capabilities.md).
+
+- [ ] **ACS operator** (`components/acs/operator/`) — Subscription for `rhacs-operator` from `redhat-operators`
+- [ ] **ACS instance** (`components/acs/instance/`) — `Central` CR deploying the ACS Central console
+- [ ] **ACS `SecuredCluster`** — register the local cluster with ACS Central so runtime monitoring is active
+- [ ] **Pipeline integration** — add a `roxctl image check` task to the Tekton golden path pipeline that fails the build if ACS reports policy violations on the built image
+- [ ] **Deploy-time policy gate** — configure an ACS admission controller policy to block non-compliant images from being deployed to production namespaces
+
+### Phase 7 — Stretch Goals
 
 - [ ] **Red Hat IdM integration** — use IdM as both the certificate issuer and OAuth provider
 - [ ] **Pluggable configuration** — Kustomize overlays or Helm values to support environment-specific tuning and make the repo more broadly applicable

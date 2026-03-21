@@ -96,42 +96,40 @@ Adding a new component = add a folder under `components/` with `operator/` and/o
 
 ### Phase 0 — Repo Scaffolding
 
-- [ ] Create the directory structure above
-- [ ] Add this PLAN.md
+- [x] Create the directory structure above
+- [x] Add this PLAN.md
 
 ### Phase 1 — GitOps Bootstrap (Foundation)
 
 This is the critical path — everything else depends on Argo CD being up and running.
 
-- [ ] **Ansible bootstrap playbook** (`ansible/playbook.yml`)
+- [x] **Ansible bootstrap playbook** (`ansible/bootstrap.yaml`)
   - Install the OpenShift GitOps operator (apply Subscription)
   - Wait for the operator to become ready
   - Apply the root Argo CD Application
-- [ ] **OpenShift GitOps operator manifests** (`components/openshift-gitops/operator/`)
+- [x] **OpenShift GitOps operator manifests** (`components/openshift-gitops/operator/`)
   - Namespace, Subscription, OperatorGroup
-- [ ] **OpenShift GitOps instance** (`components/openshift-gitops/instance/`)
+- [x] **OpenShift GitOps instance** (`components/openshift-gitops/instance/`)
   - ArgoCD CR (customized instance config)
-  - RBAC (ClusterRoleBindings for Argo CD service accounts)
-  - AppProject definitions
-- [ ] **Root Application** (`bootstrap/root-application.yaml`)
-  - Points at the `bootstrap/` directory in this repo
-- [ ] **Operators ApplicationSet** (`bootstrap/operators-appset.yaml`)
+  - RBAC (ClusterRole, ClusterRoleBinding, cluster-admins Group)
+- [x] **Root Application** — applied inline by bootstrap playbook; see [ADR-0002](decisions/0002-deploy-root-application-with-ansible.md)
+- [x] **Operators ApplicationSet** (`bootstrap/operators-appset.yaml`)
   - Git files generator reading `config.json` from `components/*/operator/`
-  - Each `config.json` declares `name` and `namespace` at minimum
+  - Each `config.json` declares `namespace` and optional `disabled`/`standalone` flags
   - Generates one Argo CD Application per operator, targeting the declared namespace
-- [ ] **Operands ApplicationSet** (`bootstrap/operands-appset.yaml`)
+- [x] **Operands ApplicationSet** (`bootstrap/operands-appset.yaml`)
   - Git files generator reading `config.json` from `components/*/instance/`
-  - Each `config.json` declares `name` and `namespace` at minimum
+  - Each `config.json` declares `namespace` and optional `disabled`/`standalone` flags
   - Generates one Argo CD Application per operand/service, targeting the declared namespace
 
 ### Phase 2 — Core Operators
 
 Each operator just needs a Subscription and OperatorGroup in the appropriate namespace.
 
-- [ ] **OpenShift Pipelines** (`components/openshift-pipelines/operator/`)
+- [x] **OpenShift Pipelines** (`components/openshift-pipelines/operator/`)
 - [ ] **Quay** (`components/quay/operator/`)
 - [ ] **Developer Hub** (`components/developer-hub/operator/`)
-- [ ] **Dev Spaces** (`components/dev-spaces/operator/`)
+- [x] **Dev Spaces** (`components/dev-spaces/operator/`)
 
 ### Phase 3 — Core Operands
 
@@ -145,7 +143,7 @@ Custom Resources and configuration for each operator's managed service.
 - [ ] **Developer Hub** (`components/developer-hub/instance/`)
   - Backstage CR
   - app-config ConfigMap
-- [ ] **Dev Spaces** (`components/dev-spaces/instance/`)
+- [x] **Dev Spaces** (`components/dev-spaces/instance/`)
   - CheCluster CR
 
 ### Phase 4 — Optional Org-Wide Services

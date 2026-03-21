@@ -68,3 +68,17 @@
         - openshift-gitops
         - openshift-gitops-operator
         - openshift-devspaces
+
+    - name: Wait for project namespaces to be fully terminated
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Namespace
+        name: "{{ item }}"
+      register: ns_result
+      until: ns_result.resources | length == 0
+      retries: 60
+      delay: 10
+      loop:
+        - openshift-gitops
+        - openshift-gitops-operator
+        - openshift-devspaces

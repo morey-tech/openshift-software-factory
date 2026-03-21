@@ -26,6 +26,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: job-tekton-console-plugin
+    namespace: openshift-operators
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

@@ -11,6 +11,10 @@
       kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default('~/.kube/config', true) }}"
       validate_certs: "{{ lookup('env', 'K8S_AUTH_VERIFY_SSL') | default('false', true) }}"
   tasks:
+    # See ../docs/decisions/0010-teardown-playbook-design.md
+    # Deleting the root Application triggers ArgoCD's cascade finalizer:
+    # bootstrap → ApplicationSets → child Applications → managed resources (Subscriptions, etc.)
+    # The Application will not fully disappear until the entire chain is deleted.
     - name: Delete root ArgoCD Application
       kubernetes.core.k8s:
         state: absent
@@ -30,33 +34,31 @@
       retries: 60
       delay: 10
 
-    - name: Delete GitOps operator Subscription
-      kubernetes.core.k8s:
-        state: absent
-        api_version: operators.coreos.com/v1alpha1
-        kind: Subscription
-        name: openshift-gitops-operator
-        namespace: openshift-gitops-operator
-
-    - name: Get GitOps operator CSV
+    # CSVs are created by OLM and are not managed by ArgoCD, so they are not
+    # removed by the cascade above. For the shared openshift-operators namespace
+    # (cannot be deleted), CSVs must be explicitly removed. Namespace deletion
+    # below handles CSVs in dedicated namespaces.
+    - name: Get all CSVs in openshift-operators
       kubernetes.core.k8s_info:
         api_version: operators.coreos.com/v1alpha1
         kind: ClusterServiceVersion
-        namespace: openshift-gitops-operator
-        label_selectors:
-          - "operators.coreos.com/openshift-gitops-operator.openshift-gitops-operator="
-      register: csv_result
+        namespace: openshift-operators
+      register: openshift_operators_csvs
 
-    - name: Delete GitOps operator CSV
+    - name: Delete all CSVs in openshift-operators
       kubernetes.core.k8s:
         state: absent
         api_version: operators.coreos.com/v1alpha1
         kind: ClusterServiceVersion
-        name: "{{ csv_result.resources[0].metadata.name }}"
-        namespace: openshift-gitops-operator
-      when: csv_result.resources | length > 0
+        name: "{{ item.metadata.name }}"
+        namespace: openshift-operators
+      loop: "{{ openshift_operators_csvs.resources }}"
+      loop_control:
+        label: "{{ item.metadata.name }}"
 
-    - name: Delete openshift-gitops namespaces
+    # Namespace termination cleans up all remaining resources, including CSVs
+    # in dedicated operator namespaces (e.g. openshift-gitops-operator).
+    - name: Delete project namespaces
       kubernetes.core.k8s:
         state: absent
         api_version: v1
@@ -65,3 +67,4 @@
       loop:
         - openshift-gitops
         - openshift-gitops-operator
+        - openshift-devspaces

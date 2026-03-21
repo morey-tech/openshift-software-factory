@@ -16,6 +16,18 @@ The bootstrap assumes an `admin` user exists on the cluster. This user is added 
 
 The Red Hat Demo Platform provisions clusters with an `admin` user by default. If your cluster uses a different administrative username, update the `users` list in [cluster-admins-group.yaml](../components/openshift-gitops/instance/manifests/cluster-admins-group.yaml) before bootstrapping.
 
+## Storage
+
+A default `StorageClass` must be configured on the cluster. Several components (Quay, Developer Hub, Dev Spaces) provision `PersistentVolumeClaims` without specifying a storage class, relying on the cluster default to satisfy them.
+
+On the Red Hat Demo Platform this is provisioned automatically. On other clusters, verify with:
+
+```bash
+oc get storageclass
+```
+
+The default storage class is marked with the annotation `storageclass.kubernetes.io/is-default-class: "true"`.
+
 ## Ansible
 
 The following Python packages are required on the control machine:

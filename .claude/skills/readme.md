@@ -6,6 +6,8 @@ Keep README.md files up to date when files in their directory are added, removed
 
 After any change to files in a directory — adding, removing, or modifying files — check whether a `README.md` exists in that directory. If it does, update it to reflect the change. Do this proactively without being asked, as part of completing the task.
 
+**Before committing:** treat the README update as a prerequisite. A commit that adds, removes, or renames a file without updating the directory's README is incomplete.
+
 ## What to update
 
 1. **Contents table** — Add, remove, or rename rows to match the current files in the directory. Each row describes a file's purpose concisely.

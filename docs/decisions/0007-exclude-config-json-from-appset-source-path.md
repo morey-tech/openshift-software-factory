@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by [ADR-0008](0008-argocdignore-for-config-json-exclusion.md)
 date: 2026-03-21
 ---
 

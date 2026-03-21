@@ -24,12 +24,12 @@
     - name: Apply OperatorGroup
       kubernetes.core.k8s:
         state: present
-        src: "{{ playbook_dir }}/../components/openshift-gitops/operator/operator-group.yaml"
+        src: "{{ playbook_dir }}/../components/openshift-gitops/operator/manifests/operator-group.yaml"
 
     - name: Apply GitOps operator Subscription
       kubernetes.core.k8s:
         state: present
-        src: "{{ playbook_dir }}/../components/openshift-gitops/operator/subscription.yaml"
+        src: "{{ playbook_dir }}/../components/openshift-gitops/operator/manifests/subscription.yaml"
 
     - name: Wait for GitOps operator to be ready
       kubernetes.core.k8s_info:
@@ -58,22 +58,22 @@
     - name: Apply ClusterRole for Argo CD
       kubernetes.core.k8s:
         state: present
-        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/cluster-role.yaml"
+        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/manifests/cluster-role.yaml"
 
     - name: Apply cluster-admins group
       kubernetes.core.k8s:
         state: present
-        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/cluster-admins-group.yaml"
+        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/manifests/cluster-admins-group.yaml"
 
     - name: Apply ClusterRoleBinding for cluster-admins group
       kubernetes.core.k8s:
         state: present
-        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/cluster-role-binding.yaml"
+        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/manifests/cluster-role-binding.yaml"
 
     - name: Apply ArgoCD instance
       kubernetes.core.k8s:
         state: present
-        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/argocd.yaml"
+        src: "{{ playbook_dir }}/../components/openshift-gitops/instance/manifests/argocd.yaml"
 
     - name: Wait for ArgoCD instance to be ready
       kubernetes.core.k8s_info:

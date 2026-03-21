@@ -1,0 +1,28 @@
+# See docs/decisions/0013-appproject-per-appset.md
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: operators
+  namespace: openshift-gitops
+spec:
+  description: OLM operator subscriptions for software factory components
+  sourceRepos:
+    - https://github.com/morey-tech/openshift-software-factory.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: '*'
+  # Namespace creation required for CreateNamespace=true sync option.
+  # ClusterRole/ClusterRoleBinding and ConsolePlugin are created by the
+  # OpenShift Pipelines console plugin component.
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: console.openshift.io
+      kind: ConsolePlugin
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

@@ -1,0 +1,20 @@
+# See docs/decisions/0013-appproject-per-appset.md
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: operands
+  namespace: openshift-gitops
+spec:
+  description: Operand CRs and configuration for software factory components
+  sourceRepos:
+    - https://github.com/morey-tech/openshift-software-factory.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: '*'
+  # Namespace creation required for CreateNamespace=true sync option.
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

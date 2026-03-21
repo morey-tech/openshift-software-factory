@@ -29,7 +29,7 @@ spec:
     metadata:
       name: "{{ index .path.segments 1 }}-instance"
     spec:
-      project: default
+      project: operands  # See ../docs/decisions/0013-appproject-per-appset.md
       source:
         repoURL: https://github.com/morey-tech/openshift-software-factory.git
         targetRevision: main

@@ -1,8 +1,19 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: job-rhdh-gitlab-token
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"
+    files:
+      - rhdh-gitlab-token-job.sh
+
 resources:
-  - rhdh-gitlab-token.yaml
+  - rhdh-gitlab-token-job.yaml
   - dynamic-plugins-root-pvc.yaml
   - dynamic-plugins-rhdh.yaml
   - app-config-rhdh.yaml

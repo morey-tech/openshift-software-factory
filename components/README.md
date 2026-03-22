@@ -14,13 +14,14 @@ Each `operator/` and `instance/` folder contains a `config.json` that declares t
 | `openshift-gitops` | Argo CD — GitOps engine |
 | `openshift-pipelines` | Tekton — CI/CD pipelines |
 | `quay` | Container image registry |
+| `gitlab` | GitLab CE — self-hosted SCM |
 | `developer-hub` | Backstage — developer portal |
 | `dev-spaces` | Cloud-based IDE workspaces |
+| `cert-manager` | TLS certificate management (required by GitLab) |
 
 ## Optional Components
 
 | Component | Description |
 |-----------|-------------|
-| `cert-manager` | TLS certificate management |
 | `external-secrets` | Secrets from external stores |
 | `external-dns` | Automated DNS management |

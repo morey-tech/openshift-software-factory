@@ -12,9 +12,12 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: '*'
   # Namespace creation required for CreateNamespace=true sync option.
+  # ClusterIssuer is cluster-scoped and required for the cert-manager instance.
   clusterResourceWhitelist:
     - group: ''
       kind: Namespace
+    - group: cert-manager.io
+      kind: ClusterIssuer
   namespaceResourceWhitelist:
     - group: '*'
       kind: '*'

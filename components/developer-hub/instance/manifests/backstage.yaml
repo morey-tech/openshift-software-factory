@@ -18,7 +18,6 @@ spec:
       secrets:
         # Injects GITLAB_TOKEN and BACKEND_SECRET into the Backstage pod.
         - name: rhdh-secrets
-    replicas: 1
     route:
       enabled: true
   database:

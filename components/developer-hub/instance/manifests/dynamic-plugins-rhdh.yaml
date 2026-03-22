@@ -30,14 +30,16 @@ data:
                       minutes: 3
 
       # Argo CD plugin — shows sync status and history on component pages.
-      # RHDH 1.9 ships the community ArgoCD plugins via OCI; roadiehq frontend
-      # was replaced by backstage-community-plugin-argocd.
-      - package: './dynamic-plugins/dist/backstage-community-plugin-argocd'
+      # In RHDH 1.9, community plugins moved to OCI (ghcr.io). The ArgoCD frontend
+      # and Roadie backend must be referenced by their OCI path + version tag.
+      # Tag format: bs_<backstage-version>__<plugin-version>
+      - package: 'oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-argocd:bs_1.45.3__2.4.3'
         disabled: false
-      - package: './dynamic-plugins/dist/backstage-community-plugin-argocd-backend'
+      - package: './dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend'
         disabled: false
 
-      # Kubernetes / Topology plugin — shows workload topology on component pages
+      # Kubernetes / Topology plugin — shows workload topology on component pages.
+      # Dist-based (Red Hat supported) — path unchanged in RHDH 1.9.
       - package: './dynamic-plugins/dist/backstage-plugin-kubernetes'
         disabled: false
       - package: './dynamic-plugins/dist/backstage-plugin-kubernetes-backend-dynamic'
@@ -46,6 +48,6 @@ data:
         disabled: false
 
       # Tekton plugin — shows PipelineRun status on component pages.
-      # Renamed from janus-idp-backstage-plugin-tekton in RHDH 1.9.
+      # Still dist-bundled in RHDH 1.9 (moves to OCI in 1.10+).
       - package: './dynamic-plugins/dist/backstage-community-plugin-tekton'
         disabled: false

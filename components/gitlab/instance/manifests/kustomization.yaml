@@ -6,6 +6,9 @@ generatorOptions:
 
 configMapGenerator:
   - name: job-gitlab-root-password
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"
     files:
       - gitlab-root-password-job.sh
 

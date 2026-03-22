@@ -1,0 +1,4 @@
+{
+  "namespace": "cert-manager-operator",
+  "disabled": "true"
+}

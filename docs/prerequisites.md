@@ -41,6 +41,30 @@ oc get noobaa -n openshift-storage
 oc get crd objectbucketclaims.objectbucket.io
 ```
 
+## TLS Certificate Management (cert-manager)
+
+Several components (GitLab, Developer Hub) rely on TLS certificates. The `cert-manager` component in this repository is **disabled by default** because the Red Hat Demo Platform provisions clusters with cert-manager pre-installed.
+
+The demo cluster includes the OpenShift cert-manager operator and two ACME `ClusterIssuers` (Let's Encrypt and ZeroSSL) that automatically issue certificates for the cluster's `apps.*` and `api.*` subdomains via DNS-01 challenge against Route53.
+
+Verify cert-manager and its issuers are present on your cluster before bootstrapping:
+
+```bash
+# Confirm the cert-manager operand is managed
+oc get certmanager cluster
+
+# List available ClusterIssuers and their readiness
+oc get clusterissuer
+
+# Check which domains each issuer is authorised for
+oc get clusterissuer -o jsonpath='{range .items[*]}{.metadata.name}: {.spec.acme.solvers[*].selector.dnsZones}{"\n"}{end}'
+
+# Check any existing certificates
+oc get certificates -A
+```
+
+If your cluster does not have cert-manager pre-installed, enable the component by setting `"disabled": "false"` in `components/cert-manager/operator/config.json` and `components/cert-manager/instance/config.json`, and add a suitable `ClusterIssuer` to `components/cert-manager/instance/manifests/`.
+
 ## Ansible
 
 The following Python packages are required on the control machine:

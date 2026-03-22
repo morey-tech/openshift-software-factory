@@ -52,6 +52,11 @@ spec:
       registry:
         enabled: false
 
+      # OpenShift ships Prometheus via the Cluster Monitoring Operator.
+      # The bundled Prometheus uses UIDs incompatible with OpenShift SCCs.
+      prometheus:
+        install: false
+
       # GitLab Pages is not needed for the software factory SCM use case.
       gitlab:
         gitlab-pages:

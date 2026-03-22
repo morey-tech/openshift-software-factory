@@ -34,19 +34,21 @@ ROOT_PASSWORD=$(oc get secret "${GITLAB_SECRET_NAME}" -n "${GITLAB_SECRET_NAMESP
 echo "Waiting for GitLab to become healthy..."
 MAX_ATTEMPTS=120
 ATTEMPT=0
-until curl -sf --max-time 5 "${GITLAB_URL}/-/health" &>/dev/null; do
+until curl -skf --max-time 5 "${GITLAB_URL}/-/health" &>/dev/null; do
   ATTEMPT=$((ATTEMPT + 1))
+  HTTP_STATUS=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "${GITLAB_URL}/-/health" 2>&1 || true)
+  CURL_EXIT=$?
+  echo "  GitLab not ready yet (attempt ${ATTEMPT}/${MAX_ATTEMPTS}): HTTP=${HTTP_STATUS} curl_exit=${CURL_EXIT}"
   if [[ ${ATTEMPT} -ge ${MAX_ATTEMPTS} ]]; then
     echo "ERROR: GitLab did not become healthy after $((MAX_ATTEMPTS * 5))s"
     exit 1
   fi
-  echo "  GitLab not ready yet (attempt ${ATTEMPT}/${MAX_ATTEMPTS}), retrying in 5s..."
   sleep 5
 done
 echo "GitLab is healthy."
 
 echo "Obtaining OAuth token for root user..."
-OAUTH_RESPONSE=$(curl -sf --max-time 15 \
+OAUTH_RESPONSE=$(curl -skf --max-time 15 \
   --data "grant_type=password&username=root&password=${ROOT_PASSWORD}" \
   "${GITLAB_URL}/oauth/token")
 OAUTH_TOKEN=$(echo "${OAUTH_RESPONSE}" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
@@ -56,7 +58,7 @@ if [[ -z "${OAUTH_TOKEN}" ]]; then
 fi
 
 echo "Creating GitLab personal access token for root user..."
-TOKEN_RESPONSE=$(curl -sf --max-time 15 \
+TOKEN_RESPONSE=$(curl -skf --max-time 15 \
   -X POST "${GITLAB_URL}/api/v4/users/1/personal_access_tokens" \
   -H "Authorization: Bearer ${OAUTH_TOKEN}" \
   -H "Content-Type: application/json" \

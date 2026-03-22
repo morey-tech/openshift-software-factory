@@ -1,0 +1,17 @@
+apiVersion: console.openshift.io/v1
+kind: ConsolePlugin
+metadata:
+  name: gitops-plugin
+  labels:
+    app.kubernetes.io/part-of: gitops-plugin
+spec:
+  backend:
+    service:
+      basePath: /
+      name: gitops-plugin
+      namespace: openshift-gitops
+      port: 9001
+    type: Service
+  displayName: GitOps Console Plugin
+  i18n:
+    loadType: Preload

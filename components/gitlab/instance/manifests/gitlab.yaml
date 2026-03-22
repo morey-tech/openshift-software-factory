@@ -26,9 +26,7 @@ spec:
           domain: CLUSTER_BASE_DOMAIN
           https: true
         initialRootPassword:
-          secret:
-            name: gitlab-initial-root-password
-            key: password
+          secret: gitlab-initial-root-password
         # TLS is terminated by the OpenShift Router using the cluster wildcard
         # certificate (*.apps.<domain>) — cert-manager is not needed.
         ingress:

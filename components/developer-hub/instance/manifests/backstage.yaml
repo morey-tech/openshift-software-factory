@@ -2,7 +2,7 @@
 # Managed by the rhdh operator installed in the rhdh-operator namespace.
 # See docs/decisions/0015-developer-hub-instance-namespace.md
 # Reference: https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.9/html/installing_red_hat_developer_hub_on_openshift_container_platform
-apiVersion: rhdh.redhat.com/v1alpha2
+apiVersion: rhdh.redhat.com/v1alpha3
 kind: Backstage
 metadata:
   name: developer-hub

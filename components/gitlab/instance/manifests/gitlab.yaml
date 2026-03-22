@@ -17,7 +17,7 @@ spec:
   chart:
     # Pin to a specific GitLab chart version supported by the installed operator.
     # Check supported versions: https://gitlab.com/gitlab-org/cloud-native/gitlab-operator/-/releases
-    version: "9.9.3"
+    version: "8.8.1"
     values:
       global:
         edition: ce

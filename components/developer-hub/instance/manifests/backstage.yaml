@@ -1,0 +1,37 @@
+# Red Hat Developer Hub instance.
+# Managed by the rhdh operator installed in the rhdh-operator namespace.
+# See docs/decisions/0015-developer-hub-instance-namespace.md
+# Reference: https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.9/html/installing_red_hat_developer_hub_on_openshift_container_platform
+apiVersion: rhdh.redhat.com/v1alpha2
+kind: Backstage
+metadata:
+  name: developer-hub
+  namespace: rhdh
+spec:
+  application:
+    appConfig:
+      mountPath: /opt/app-root/src
+      configMaps:
+        - name: app-config-rhdh
+    dynamicPluginsConfigMapName: dynamic-plugins-rhdh
+    extraEnvs:
+      secrets:
+        # Injects GITLAB_TOKEN and BACKEND_SECRET into the Backstage pod.
+        - name: rhdh-secrets
+    replicas: 1
+    route:
+      enabled: true
+  database:
+    enableLocalDb: true
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            volumes:
+              # Replace the default ephemeral dynamic-plugins-root volume with a PVC
+              # so that plugin downloads persist across pod restarts.
+              - $patch: replace
+                name: dynamic-plugins-root
+                persistentVolumeClaim:
+                  claimName: dynamic-plugins-root

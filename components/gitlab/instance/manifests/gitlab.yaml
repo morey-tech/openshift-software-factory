@@ -1,0 +1,60 @@
+# GitLab Community Edition instance deployed via the GitLab Operator.
+#
+# The cluster apps domain is injected into spec.chart.values.global.hosts.domain
+# at build time via Kustomize replacements from cluster-config.yaml.
+#
+# The operator chart version must match a version supported by the installed
+# operator. Find supported versions with:
+#   oc get csv -n gitlab-system -o jsonpath='{.items[0].spec.version}'
+#
+# Reference: https://docs.gitlab.com/operator/
+apiVersion: apps.gitlab.com/v1beta1
+kind: GitLab
+metadata:
+  name: gitlab
+  namespace: gitlab-system
+spec:
+  chart:
+    # Pin to a specific GitLab chart version supported by the installed operator.
+    # Check supported versions: https://gitlab.com/gitlab-org/cloud-native/gitlab-operator/-/releases
+    version: "8.8.1"
+    values:
+      global:
+        edition: ce
+        hosts:
+          # Injected at build time by Kustomize replacements from cluster-config.yaml.
+          domain: CLUSTER_BASE_DOMAIN
+          https: true
+        initialRootPassword:
+          secret:
+            name: gitlab-initial-root-password
+            key: password
+        # TLS is terminated by the OpenShift Router using the cluster wildcard
+        # certificate (*.apps.<domain>) — cert-manager is not needed.
+        ingress:
+          configureCertmanager: false
+          class: openshift-default
+          annotations:
+            route.openshift.io/termination: "edge"
+
+      # Disable bundled NGINX — OpenShift Router owns Ingress via Routes.
+      # Without this, the NGINX controller conflicts with the OpenShift Router.
+      nginx-ingress:
+        enabled: false
+
+      # Do not install the bundled cert-manager — not needed with OpenShift Routes.
+      certmanager:
+        install: false
+
+      # GitLab Runner is not needed — Tekton pipelines handle CI/CD.
+      gitlab-runner:
+        install: false
+
+      # Container registry is not needed — Quay serves as the image registry.
+      registry:
+        enabled: false
+
+      # GitLab Pages is not needed for the software factory SCM use case.
+      gitlab:
+        gitlab-pages:
+          enabled: false

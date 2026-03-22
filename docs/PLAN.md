@@ -152,7 +152,7 @@ Required to complete Phase 3 — Developer Hub needs an on-cluster SCM for templ
   - OpenShift cert-manager operator + self-signed `ClusterIssuer`
 - [x] **GitLab CE operator** (`components/gitlab/operator/`) — GitLab operator
   - See [ADR-0014](decisions/0014-gitlab-as-self-hosted-scm.md)
-- [ ] **GitLab CE instance** (`components/gitlab/instance/`) — GitLab CR (Community Edition)
+- [x] **GitLab CE instance** (`components/gitlab/instance/`) — GitLab CR (Community Edition)
 
 ### Phase 4 — Optional Org-Wide Services
 

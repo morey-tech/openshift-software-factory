@@ -145,11 +145,21 @@ Custom Resources and configuration for each operator's managed service.
 - [x] **Dev Spaces** (`components/dev-spaces/instance/`)
   - CheCluster CR
 
+### Phase 3.1 — Self-Hosted SCM (GitLab)
+
+Required to complete Phase 3 — Developer Hub needs an on-cluster SCM for templates and catalog discovery.
+
+- [ ] **cert-manager** (`components/cert-manager/`) — prerequisite for GitLab operator
+  - OpenShift cert-manager operator + self-signed `ClusterIssuer`
+- [x] **GitLab CE operator** (`components/gitlab/operator/`) — GitLab operator
+  - See [ADR-0014](decisions/0014-gitlab-as-self-hosted-scm.md)
+- [ ] **GitLab CE instance** (`components/gitlab/instance/`) — GitLab CR (Community Edition)
+
 ### Phase 4 — Optional Org-Wide Services
 
 These are not required for the core software factory but elevate the setup.
 
-- [ ] **cert-manager** — operator + ClusterIssuer CR
+- [ ] **cert-manager ClusterIssuer upgrade** — replace `selfsigned-issuer` with ACME or Red Hat IdM issuer
 - [ ] **external-secrets** — operator + SecretStore CR (for cert-manager and OAuth secrets)
 - [ ] **external-dns** — operator + DNS config (works with cert-manager)
 - [ ] **OAuth integration** — configure Developer Hub and Dev Spaces to use an external identity provider

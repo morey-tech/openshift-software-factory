@@ -149,7 +149,6 @@ Custom Resources and configuration for each operator's managed service.
 
 Required to complete Phase 3 — Developer Hub needs an on-cluster SCM for templates and catalog discovery.
 
-- [ ] **cert-manager** (`components/cert-manager/`) — prerequisite for GitLab operator
   - OpenShift cert-manager operator + self-signed `ClusterIssuer`
 - [x] **GitLab CE operator** (`components/gitlab/operator/`) — GitLab operator
   - See [ADR-0014](decisions/0014-gitlab-as-self-hosted-scm.md)

@@ -7,11 +7,6 @@
 # (k8s-operatorhub/community-operators) has no OCP version constraint.
 # The custom CatalogSource in catalog-source.yaml adds that catalog to the cluster.
 #
-# OLM INSTALL IS EXPERIMENTAL — GitLab does not provide support for OLM-deployed
-# instances. See https://docs.gitlab.com/operator/installation/?tab=OpenShift
-# InstallPlanApproval is set to Manual per GitLab's OpenShift recommendation to
-# prevent unintended operator upgrades (chart version is pinned in the GitLab CR).
-#
 # Reference: https://operatorhub.io/operator/gitlab-operator-kubernetes
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -20,6 +15,10 @@ metadata:
   namespace: gitlab-system
 spec:
   channel: stable
+  # OLM INSTALL IS EXPERIMENTAL — GitLab does not provide support for OLM-deployed
+  # instances. See https://docs.gitlab.com/operator/installation/?tab=OpenShift
+  # InstallPlanApproval is set to Manual per GitLab's OpenShift recommendation to
+  # prevent unintended operator upgrades (chart version is pinned in the GitLab CR).
   installPlanApproval: Manual
   name: gitlab-operator-kubernetes
   source: gitlab-operator-catalog

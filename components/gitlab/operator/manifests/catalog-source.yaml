@@ -1,0 +1,24 @@
+# Custom CatalogSource for the OperatorHub.io community catalog.
+#
+# The GitLab operator (gitlab-operator-kubernetes) is absent from all four
+# default OpenShift catalog sources on OCP 4.21 because the community-operators-prod
+# version caps support at v4.20 (com.redhat.openshift.versions: v4.12-v4.20).
+#
+# The OperatorHub.io catalog (k8s-operatorhub/community-operators) carries the
+# same operator version without the OCP version constraint, making it available
+# on any Kubernetes/OpenShift version.
+#
+# Reference: https://operatorhub.io/operator/gitlab-operator-kubernetes
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: gitlab-operator-catalog
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: quay.io/operatorhubio/catalog:latest
+  displayName: OperatorHub.io Community Operators (GitLab)
+  publisher: OperatorHub.io
+  updateStrategy:
+    registryPoll:
+      interval: 60m

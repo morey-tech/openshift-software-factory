@@ -1,0 +1,26 @@
+# GitLab Operator installed via OLM from the OperatorHub.io community catalog.
+#
+# WHY NOT certified-operators or community-operators?
+# The community-operators-prod bundle 2.9.2 declares:
+#   com.redhat.openshift.versions: v4.12-v4.20
+# which excludes OCP 4.21. The same version in the OperatorHub.io catalog
+# (k8s-operatorhub/community-operators) has no OCP version constraint.
+# The custom CatalogSource in catalog-source.yaml adds that catalog to the cluster.
+#
+# OLM INSTALL IS EXPERIMENTAL — GitLab does not provide support for OLM-deployed
+# instances. See https://docs.gitlab.com/operator/installation/?tab=OpenShift
+# InstallPlanApproval is set to Manual per GitLab's OpenShift recommendation to
+# prevent unintended operator upgrades (chart version is pinned in the GitLab CR).
+#
+# Reference: https://operatorhub.io/operator/gitlab-operator-kubernetes
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: gitlab-operator-kubernetes
+  namespace: gitlab-system
+spec:
+  channel: stable
+  installPlanApproval: Manual
+  name: gitlab-operator-kubernetes
+  source: gitlab-operator-catalog
+  sourceNamespace: openshift-marketplace

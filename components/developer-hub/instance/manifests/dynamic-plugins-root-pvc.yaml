@@ -1,0 +1,14 @@
+# Persistent volume for RHDH dynamic plugin installations.
+# The Backstage CR references this PVC by name to cache plugin downloads
+# across pod restarts, avoiding re-download on every startup.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dynamic-plugins-root
+  namespace: rhdh
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

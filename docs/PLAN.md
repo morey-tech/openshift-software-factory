@@ -167,20 +167,21 @@ These are not required for the core software factory but elevate the setup.
 
 A working end-to-end developer workflow: Developer Hub scaffolds a new application, Pipelines build and test it, Argo CD deploys it, and Dev Spaces provides a ready-to-code workspace. See [capabilities.md](capabilities.md) for the full rationale.
 
-- [ ] **Developer Hub Software Template** — a golden path template in the Developer Hub catalog that scaffolds a new application with:
-  - Source repo (GitHub/Gitlab) with a pre-configured `Containerfile` and Kubernetes manifests
-  - A `devfile.yaml` referencing the Dev Spaces default workspace definition
-  - A stub `Tekton Pipeline` and `PipelineRun` trigger (webhook or manual)
-  - An Argo CD `Application` pointing at the scaffolded repo's manifests directory
-- [ ] **Tekton Pipeline — Build & Push** — a reusable `Pipeline` (stored in this repo) that:
-  - Clones source, builds a container image, and pushes to Quay
-  - Runs unit tests and linting
-  - Updates the image tag in the deployment manifests (GitOps write-back)
-- [ ] **Argo CD auto-deploy** — each scaffolded application gets its own Argo CD `Application` (or is registered in an existing `ApplicationSet`) that watches the manifests directory and deploys on merge to main
-- [ ] **Dev Spaces devfile defaults** — a default `devfile.yaml` in this repo (or a dedicated devfile registry) that:
-  - Defines the base development container image with common tooling pre-installed
-  - Pre-installs VS Code extensions (linting, Git, language support)
-  - Mounts workspace settings and dotfiles
+Source: adapted from [`rhpds/developer-hub-software-templates` `quarkus-web-template`](https://github.com/rhpds/developer-hub-software-templates/tree/main/scaffolder-templates/quarkus-web-template) — the only template in that repo with native `publish:gitlab` + Tekton + ArgoCD support. All other templates in that repo use `publish:github`. Template lives in this repo under `catalog/templates/quarkus-web-template/` and is registered in RHDH via a static catalog location; scaffolded repos are published to the on-cluster GitLab `software-factory` group.
+
+- [ ] **Tekton Build & Push Pipeline** (`components/openshift-pipelines/instance/manifests/pipeline-build-push.yaml`)
+  - Cluster-level `Pipeline` with tasks: `git-clone` → `buildah` (build OCI image) → push to Quay → `git-cli` write-back (update image tag in GitOps repo)
+- [ ] **Software Template** (`catalog/templates/quarkus-web-template/`)
+  - `template.yaml` — adapted from upstream: dynamic GitLab host, `openshift-gitops` ArgoCD namespace, Quay registry inputs
+  - `skeleton/` — Quarkus starter source, `Containerfile`, `devfile.yaml`, `catalog-info.yaml`, `.tekton/pipeline.yaml` + `.tekton/pipelinerun.yaml`
+  - No new RHDH plugins required — scaffolder actions used: `fetch:template` → `publish:gitlab` (source repo) → `fetch:template` → `publish:gitlab` (GitOps repo with ArgoCD `Application`) → `catalog:register`
+- [ ] **RHDH catalog location** (`components/developer-hub/instance/manifests/app-config-rhdh.yaml`)
+  - Add static location pointing to `catalog/templates/quarkus-web-template/catalog-info.yaml` in this repo so the template is available before any GitLab repos exist
+- [ ] **Dev Spaces devfile** (`catalog/templates/quarkus-web-template/skeleton/devfile.yaml`)
+  - UBI-based workspace image with common tooling, VS Code extensions (Java, Git, linting), Git remote pre-configured from scaffold inputs
+- [ ] **Argo CD auto-deploy**
+  - Template scaffolds a dedicated GitOps repo in GitLab with an ArgoCD `Application` manifest (Kustomize overlay per environment)
+  - ArgoCD syncs it automatically via the existing `openshift-gitops` instance; no ApplicationSet changes needed
 
 ### Phase 6 — ACS Integration
 

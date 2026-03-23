@@ -181,7 +181,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 
 #### 5.0 — GitLab Group Initialization Job
 *Prerequisite for all other Phase 5 tasks. Depends on GitLab instance running and root password Secret existing (Phase 3.1).*
-- [ ] Create `components/gitlab/instance/manifests/gitlab-group-init-job.yaml` (ServiceAccount, Role, RoleBinding, ConfigMap with script, Job)
+- [x] Create `components/gitlab/instance/manifests/gitlab-group-init-job.yaml` (ServiceAccount, Role, RoleBinding, ConfigMap with script, Job)
   - Sync wave `1` — runs after GitLab CR is `Running` (wave `0`) and root password Secret exists (wave `-1`)
   - Script polls GitLab health, then uses the root PAT from `rhdh-secrets` (or reads `gitlab-initial-root-password` directly) to call the GitLab API:
     - `POST /api/v4/groups` — create `software-factory` group (idempotent: skip if already exists)

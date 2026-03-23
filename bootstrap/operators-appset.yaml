@@ -45,3 +45,10 @@ spec:
         syncOptions:
           # See ../docs/decisions/0004-auto-create-namespaces-in-applicationsets.md
           - CreateNamespace=true
+  # See ../docs/decisions/0023-ignore-application-differences-for-sync-policy-and-target-revision.md
+  ignoreApplicationDifferences:
+    - jsonPointers:
+      # Allow automated sync policy to be disabled manually.
+      - /spec/syncPolicy/automated
+      # Allow target revision to be set manually for PR testing.
+      - /spec/source/targetRevision

@@ -92,6 +92,7 @@ type: Opaque
 stringData:
   GITLAB_TOKEN: "${GITLAB_TOKEN}"
   BACKEND_SECRET: "${BACKEND_SECRET}"
+  APPS_DOMAIN: "${APPS_DOMAIN}"
 EOF
 
 echo "Done. The rhdh-secrets Secret has been created in the ${SECRET_NAMESPACE} namespace."

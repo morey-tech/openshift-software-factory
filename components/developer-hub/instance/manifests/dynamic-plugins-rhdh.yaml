@@ -19,7 +19,7 @@ data:
             providers:
               gitlab:
                 software-factory:
-                  host: gitlab.${GITLAB_HOST}
+                  host: gitlab.${APPS_DOMAIN}
                   group: software-factory
                   branch: main
                   entityFilename: catalog-info.yaml

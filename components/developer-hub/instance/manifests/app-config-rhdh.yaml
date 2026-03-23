@@ -39,13 +39,14 @@ data:
     signInPage: guest
 
     # Self-hosted GitLab integration.
-    # GITLAB_TOKEN is injected from the rhdh-secrets Secret by job-rhdh-gitlab-token.
-    # The hostname follows the same pattern as other routes: <subdomain>.${RHDH_ROUTE_HOST}.
+    # GITLAB_TOKEN and APPS_DOMAIN are injected from the rhdh-secrets Secret
+    # by job-rhdh-gitlab-token, which discovers APPS_DOMAIN from the cluster
+    # ingress config at deploy time.
     integrations:
       gitlab:
-        - host: gitlab.${RHDH_ROUTE_HOST}
-          apiBaseUrl: https://gitlab.${RHDH_ROUTE_HOST}/api/v4
-          baseUrl: https://gitlab.${RHDH_ROUTE_HOST}
+        - host: gitlab.${APPS_DOMAIN}
+          apiBaseUrl: https://gitlab.${APPS_DOMAIN}/api/v4
+          baseUrl: https://gitlab.${APPS_DOMAIN}
           token: ${GITLAB_TOKEN}
 
     catalog:
@@ -67,7 +68,7 @@ data:
         # GitLab org sync — imports GitLab groups and members as Backstage Groups/Users.
         gitlabOrg:
           software-factory-org:
-            host: gitlab.${RHDH_ROUTE_HOST}
+            host: gitlab.${APPS_DOMAIN}
             group: software-factory
             orgEnabled: true
             schedule:
@@ -95,5 +96,5 @@ data:
         - type: config
           instances:
             - name: software-factory-argocd
-              url: https://software-factory-argocd-server-openshift-gitops.${RHDH_ROUTE_HOST}
+              url: https://software-factory-argocd-server-openshift-gitops.${APPS_DOMAIN}
               token: ${ARGOCD_TOKEN}

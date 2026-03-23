@@ -36,12 +36,7 @@ docs/             # Architecture docs, ADRs, and project plan
 
 ## Getting Started
 
-Run the Ansible bootstrap playbook to install the OpenShift GitOps operator and deploy the root Argo CD application:
-
-```bash
-cd ansible
-ansible-playbook bootstrap.yaml
-```
+See the [Ansible README](ansible/README.md) for prerequisites, inventory setup, and step-by-step instructions to bootstrap the cluster.
 
 ## Documentation
 

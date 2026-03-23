@@ -90,9 +90,28 @@
       loop_control:
         label: "{{ item.metadata.name }}"
 
-    # openshift-gitops is deleted and fully waited on before openshift-gitops-operator.
-    # The GitOps operator (in openshift-gitops-operator) must remain alive while
-    # openshift-gitops terminates so it can process the ArgoCD CR teardown finalizer.
+    # openshift-gitops-operator is deleted first so its controller stops reconciling
+    # and no longer recreates the openshift-gitops namespace. The ArgoCD CR finalizer
+    # has already been processed by this point (ArgoCD CR was removed as part of the
+    # openshift-gitops-instance Application deletion above), so the operator is no
+    # longer needed.
+    - name: Delete openshift-gitops-operator namespace
+      kubernetes.core.k8s:
+        state: absent
+        api_version: v1
+        kind: Namespace
+        name: openshift-gitops-operator
+
+    - name: Wait for openshift-gitops-operator namespace to terminate
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Namespace
+        name: openshift-gitops-operator
+      register: ns_result
+      until: ns_result.resources | length == 0
+      retries: 60
+      delay: 10
+
     - name: Delete openshift-gitops namespace
       kubernetes.core.k8s:
         state: absent
@@ -117,7 +136,6 @@
         kind: Namespace
         name: "{{ item }}"
       loop:
-        - openshift-gitops-operator
         - openshift-devspaces
 
     - name: Wait for remaining project namespaces to terminate
@@ -130,5 +148,4 @@
       retries: 60
       delay: 10
       loop:
-        - openshift-gitops-operator
         - openshift-devspaces

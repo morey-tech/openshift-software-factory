@@ -36,6 +36,12 @@ spec:
         ingress:
           configureCertmanager: false
           class: openshift-default
+          # TLS is terminated by the OpenShift Router using the cluster wildcard
+          # certificate. Disabling tls here prevents the chart from generating a
+          # tls: block on the Ingress, which would require a secretName that doesn't
+          # exist and causes the router to present an untrusted self-signed cert.
+          tls:
+            enabled: false
           annotations:
             route.openshift.io/termination: "edge"
 

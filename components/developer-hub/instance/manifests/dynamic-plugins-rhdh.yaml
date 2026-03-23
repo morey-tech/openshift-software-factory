@@ -30,12 +30,11 @@ data:
                       minutes: 3
 
       # Argo CD plugin — shows sync status and history on component pages.
-      # In RHDH 1.9, community plugins moved to OCI (ghcr.io). The ArgoCD frontend
-      # and Roadie backend must be referenced by their OCI path + version tag.
+      # Both the frontend and Roadie backend are OCI-only in RHDH 1.9 (not dist-bundled).
       # Tag format: bs_<backstage-version>__<plugin-version>
       - package: 'oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-argocd:bs_1.45.3__2.4.3'
         disabled: false
-      - package: './dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend'
+      - package: 'oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/roadiehq-backstage-plugin-argo-cd-backend:bs_1.45.3__4.6.0'
         disabled: false
 
       # Kubernetes / Topology plugin — shows workload topology on component pages.

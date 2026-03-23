@@ -191,7 +191,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 
 #### 5.1 — Tekton Build & Push Pipeline
 *No dependencies — can be implemented first.*
-- [ ] Create `components/openshift-pipelines/instance/manifests/pipeline-build-push.yaml`
+- [x] Create `components/openshift-pipelines/instance/manifests/pipeline-build-push.yaml`
   - Cluster-scoped `Pipeline` named `build-and-push`
   - Tasks in order: `git-clone` → `buildah` (build + push OCI image to Quay) → `git-cli` (write image digest back to GitOps repo)
   - Workspace bindings: shared source workspace, Quay push secret, GitLab SSH/token for write-back

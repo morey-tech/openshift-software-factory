@@ -1,0 +1,208 @@
+# Shared build-and-push Pipeline deployed to openshift-pipelines so it can be
+# referenced cross-namespace from scaffolded app PipelineRuns via the cluster
+# resolver. See docs/decisions/0025-cluster-resolver-for-pipeline-and-task-refs.md
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: build-and-push
+  namespace: openshift-pipelines
+spec:
+  params:
+    - name: source-repo-url
+      type: string
+      description: >-
+        HTTPS URL of the application source repository
+        (e.g. https://gitlab.apps.x.y/software-factory/apps/my-app)
+    - name: source-repo-revision
+      type: string
+      description: Branch, tag, or SHA to build
+      default: main
+    - name: image
+      type: string
+      description: >-
+        Full image name without tag
+        (e.g. registry-quay-quay-operator.apps.x.y/quayadmin/my-app)
+    - name: image-tag
+      type: string
+      description: Image tag to apply to the built image
+      default: latest
+    - name: gitops-repo-url
+      type: string
+      description: >-
+        HTTPS URL of the GitOps repository
+        (e.g. https://gitlab.apps.x.y/software-factory/apps/my-app-gitops)
+    - name: gitops-manifest-path
+      type: string
+      description: >-
+        Path within the GitOps repo to the Kustomize overlay directory
+        containing the image reference (e.g. overlays/dev)
+      default: overlays/dev
+
+  workspaces:
+    - name: source
+      description: >-
+        Shared PVC workspace for source clone and buildah build context
+    - name: quay-auth
+      description: >-
+        Secret with .dockerconfigjson for pushing to the Quay registry
+        (type: kubernetes.io/dockerconfigjson)
+    - name: gitops-credentials
+      description: >-
+        Secret with keys 'user' and 'password' containing a GitLab token
+        used to authenticate the write-back git push
+
+  results:
+    - name: IMAGE_URL
+      description: Full image reference including tag (image:tag)
+      value: $(tasks.build-push.results.IMAGE_URL)
+    - name: IMAGE_DIGEST
+      description: OCI digest of the built image (sha256:...)
+      value: $(tasks.build-push.results.IMAGE_DIGEST)
+
+  tasks:
+
+    # -------------------------------------------------------------------------
+    # Task 1: clone the application source repository
+    # Uses the cluster resolver to reference the git-clone Task bundled with the
+    # OpenShift Pipelines operator in the openshift-pipelines namespace.
+    # -------------------------------------------------------------------------
+    - name: clone
+      taskRef:
+        resolver: cluster
+        params:
+          - {name: kind,      value: task}
+          - {name: name,      value: git-clone}
+          - {name: namespace, value: openshift-pipelines}
+      params:
+        - name: url
+          value: $(params.source-repo-url)
+        - name: revision
+          value: $(params.source-repo-revision)
+        - name: sslVerify
+          value: "false"
+        - name: deleteExisting
+          value: "true"
+      workspaces:
+        - name: output
+          workspace: source
+
+    # -------------------------------------------------------------------------
+    # Task 2: build the container image and push to Quay
+    # Uses the cluster resolver to reference the buildah Task bundled with the
+    # OpenShift Pipelines operator in the openshift-pipelines namespace.
+    # -------------------------------------------------------------------------
+    - name: build-push
+      runAfter:
+        - clone
+      taskRef:
+        resolver: cluster
+        params:
+          - {name: kind,      value: task}
+          - {name: name,      value: buildah}
+          - {name: namespace, value: openshift-pipelines}
+      params:
+        - name: IMAGE
+          value: $(params.image):$(params.image-tag)
+        - name: DOCKERFILE
+          value: ./Containerfile
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: "false"
+        - name: FORMAT
+          value: oci
+      workspaces:
+        - name: source
+          workspace: source
+        - name: dockerconfig
+          workspace: quay-auth
+
+    # -------------------------------------------------------------------------
+    # Task 3: update the image reference in the GitOps repo (write-back)
+    # Inline taskSpec — no equivalent bundled Task exists for the
+    # kustomize-edit + git-commit pattern. Inline keeps all pipeline logic in
+    # one file. See docs/decisions/0025-cluster-resolver-for-pipeline-and-task-refs.md
+    # -------------------------------------------------------------------------
+    - name: update-gitops
+      runAfter:
+        - build-push
+      params:
+        - name: gitops-repo-url
+          value: $(params.gitops-repo-url)
+        - name: gitops-manifest-path
+          value: $(params.gitops-manifest-path)
+        - name: image
+          value: $(params.image)
+        - name: image-tag
+          value: $(params.image-tag)
+        - name: image-digest
+          value: $(tasks.build-push.results.IMAGE_DIGEST)
+      workspaces:
+        - name: gitops-credentials
+          workspace: gitops-credentials
+      taskSpec:
+        params:
+          - {name: gitops-repo-url,      type: string}
+          - {name: gitops-manifest-path, type: string}
+          - {name: image,                type: string}
+          - {name: image-tag,            type: string}
+          - {name: image-digest,         type: string}
+        workspaces:
+          - name: gitops-credentials
+            description: Secret with keys 'user' and 'password' for GitLab basic auth
+        steps:
+          - name: clone-update-push
+            image: registry.redhat.io/openshift4/ose-cli
+            script: |
+              #!/usr/bin/env bash
+              set -euo pipefail
+
+              GITLAB_USER=$(cat /workspace/gitops-credentials/user)
+              GITLAB_TOKEN=$(cat /workspace/gitops-credentials/password)
+
+              # Embed credentials in the clone URL (basic-auth over HTTPS)
+              REPO_URL="$(params.gitops-repo-url)"
+              REPO_NO_SCHEME="${REPO_URL#https://}"
+              AUTHENTICATED_URL="https://${GITLAB_USER}:${GITLAB_TOKEN}@${REPO_NO_SCHEME}"
+
+              WORK_DIR=$(mktemp -d)
+              echo "Cloning GitOps repository..."
+              git -c http.sslVerify=false clone "${AUTHENTICATED_URL}" "${WORK_DIR}"
+
+              cd "${WORK_DIR}/$(params.gitops-manifest-path)"
+
+              # Build the new tag value: <tag>@<digest> when a digest is available,
+              # otherwise just <tag>. The gitops skeleton uses a single newTag: entry
+              # in the images: block of kustomization.yaml.
+              IMAGE_TAG="$(params.image-tag)"
+              IMAGE_DIGEST="$(params.image-digest)"
+              if [[ -n "${IMAGE_DIGEST}" ]]; then
+                NEW_TAG="${IMAGE_TAG}@${IMAGE_DIGEST}"
+              else
+                NEW_TAG="${IMAGE_TAG}"
+              fi
+
+              echo "Updating newTag in kustomization.yaml to: ${NEW_TAG}"
+              # PyYAML is not available in ose-cli; use Python stdlib re module instead.
+              # The skeleton guarantees exactly one newTag: entry in the images: block.
+              python3 - "${NEW_TAG}" <<'PYEOF'
+              import re, sys
+              new_tag = sys.argv[1]
+              path = "kustomization.yaml"
+              content = open(path).read()
+              updated = re.sub(r'(newTag:\s*).*', r'\g<1>' + new_tag, content)
+              open(path, "w").write(updated)
+              print(f"Updated newTag to: {new_tag}")
+              PYEOF
+
+              git config user.email "tekton-pipeline@openshift-pipelines"
+              git config user.name  "Tekton Pipeline"
+              git add kustomization.yaml
+              if git diff --cached --quiet; then
+                echo "Nothing to commit — image already up to date"
+                exit 0
+              fi
+              git commit -m "ci: update image to $(params.image):${NEW_TAG}"
+              git -c http.sslVerify=false push
+              echo "GitOps repo updated successfully."

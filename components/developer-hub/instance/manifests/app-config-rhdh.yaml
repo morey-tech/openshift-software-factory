@@ -39,14 +39,13 @@ data:
     signInPage: guest
 
     # Self-hosted GitLab integration.
-    # GITLAB_TOKEN must be set in the rhdh-gitlab-token Secret.
-    # IMPORTANT: Replace <GITLAB_ROUTE_HOST> with the actual GitLab route hostname.
-    # Find it with: oc get route -n gitlab-system -o jsonpath='{.items[0].spec.host}'
+    # GITLAB_TOKEN is injected from the rhdh-secrets Secret by job-rhdh-gitlab-token.
+    # The hostname follows the same pattern as other routes: <subdomain>.${RHDH_ROUTE_HOST}.
     integrations:
       gitlab:
-        - host: <GITLAB_ROUTE_HOST>
-          apiBaseUrl: https://<GITLAB_ROUTE_HOST>/api/v4
-          baseUrl: https://<GITLAB_ROUTE_HOST>
+        - host: gitlab.${RHDH_ROUTE_HOST}
+          apiBaseUrl: https://gitlab.${RHDH_ROUTE_HOST}/api/v4
+          baseUrl: https://gitlab.${RHDH_ROUTE_HOST}
           token: ${GITLAB_TOKEN}
 
     catalog:
@@ -68,7 +67,7 @@ data:
         # GitLab org sync — imports GitLab groups and members as Backstage Groups/Users.
         gitlabOrg:
           software-factory-org:
-            host: <GITLAB_ROUTE_HOST>
+            host: gitlab.${RHDH_ROUTE_HOST}
             group: software-factory
             orgEnabled: true
             schedule:

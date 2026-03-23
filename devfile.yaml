@@ -24,6 +24,13 @@ commands:
       component: tools
       commandLine: ansible-playbook bootstrap.yaml
       workingDir: /projects/openshift-software-factory/ansible
+  - id: install-claude-code
+    exec:
+      label: Install Claude Code CLI
+      component: tools
+      commandLine: npm install -g @anthropic-ai/claude-code
+      workingDir: /projects/openshift-software-factory
 events:
   postStart:
     - install-ansible
+    - install-claude-code

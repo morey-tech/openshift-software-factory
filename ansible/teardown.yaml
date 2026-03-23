@@ -23,15 +23,25 @@
         name: bootstrap
         namespace: openshift-gitops
 
-    - name: Wait for root Application to be fully removed
+    # Wait for all cascade-managed Applications to be removed before proceeding.
+    # The bootstrap Application's finalizer removes the ApplicationSets, which in
+    # turn cascade-delete their child Applications. The bootstrap CR itself may
+    # disappear before child Applications are fully gone, so waiting on the root
+    # Application alone is insufficient. Instead, wait until only the standalone
+    # openshift-gitops-instance Application remains (it has no cascade finalizer
+    # and is deleted separately below).
+    - name: Wait for all cascade-managed Applications to be removed
       kubernetes.core.k8s_info:
         api_version: argoproj.io/v1alpha1
         kind: Application
-        name: bootstrap
         namespace: openshift-gitops
-      register: app_result
-      until: app_result.resources | length == 0
-      retries: 60
+      register: apps_result
+      until: >
+        apps_result.resources
+        | selectattr('metadata.name', '!=', 'openshift-gitops-instance')
+        | list
+        | length == 0
+      retries: 120
       delay: 10
 
     # The standalone Application has no cascade finalizer so deletion is instant.

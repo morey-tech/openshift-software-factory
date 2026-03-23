@@ -122,6 +122,42 @@
       loop_control:
         label: "{{ item.metadata.name }}"
 
+    # When a CSV is deleted its InstallPlan is also deleted, but OLM-generated
+    # subscriptions in openshift-operators (e.g. devworkspace-operator, created
+    # automatically as a dependency) retain an olm.generated-by annotation that
+    # references the now-deleted InstallPlan. On the next bootstrap OLM enters a
+    # tight retry loop trying to look up that InstallPlan, starving all other
+    # subscriptions (including openshift-pipelines-operator) from being processed.
+    # Remove the stale annotation from every subscription in openshift-operators
+    # so OLM starts clean on re-bootstrap.
+    - name: Get all Subscriptions in openshift-operators
+      kubernetes.core.k8s_info:
+        api_version: operators.coreos.com/v1alpha1
+        kind: Subscription
+        namespace: openshift-operators
+      register: openshift_operators_subs
+
+    - name: Remove stale olm.generated-by annotation from Subscriptions
+      kubernetes.core.k8s:
+        state: patched
+        api_version: operators.coreos.com/v1alpha1
+        kind: Subscription
+        name: "{{ item.metadata.name }}"
+        namespace: openshift-operators
+        definition:
+          metadata:
+            annotations:
+              olm.generated-by: null
+      loop: >-
+        {{
+          openshift_operators_subs.resources
+          | selectattr('metadata.annotations', 'defined')
+          | selectattr('metadata.annotations["olm.generated-by"]', 'defined')
+          | list
+        }}
+      loop_control:
+        label: "{{ item.metadata.name }}"
+
     # Explicitly delete the ArgoCD CR and wait for the operator to finish processing
     # its finalizer (argoproj.io/finalizer) before removing the operator namespace.
     # The openshift-gitops-instance Application has no cascade finalizer so Argo CD

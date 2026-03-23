@@ -90,11 +90,31 @@
       loop_control:
         label: "{{ item.metadata.name }}"
 
-    # openshift-gitops-operator is deleted first so its controller stops reconciling
-    # and no longer recreates the openshift-gitops namespace. The ArgoCD CR finalizer
-    # has already been processed by this point (ArgoCD CR was removed as part of the
-    # openshift-gitops-instance Application deletion above), so the operator is no
-    # longer needed.
+    # Explicitly delete the ArgoCD CR and wait for the operator to finish processing
+    # its finalizer (argoproj.io/finalizer) before removing the operator namespace.
+    # The openshift-gitops-instance Application has no cascade finalizer so Argo CD
+    # does not delete the ArgoCD CR when the Application is removed — it must be
+    # deleted here. If the operator is removed first, nothing can process the finalizer
+    # and the openshift-gitops namespace gets stuck in Terminating.
+    - name: Delete ArgoCD instance
+      kubernetes.core.k8s:
+        state: absent
+        api_version: argoproj.io/v1beta1
+        kind: ArgoCD
+        name: software-factory-argocd
+        namespace: openshift-gitops
+
+    - name: Wait for ArgoCD instance to be fully removed
+      kubernetes.core.k8s_info:
+        api_version: argoproj.io/v1beta1
+        kind: ArgoCD
+        name: software-factory-argocd
+        namespace: openshift-gitops
+      register: argocd_result
+      until: argocd_result.resources | length == 0
+      retries: 60
+      delay: 10
+
     - name: Delete openshift-gitops-operator namespace
       kubernetes.core.k8s:
         state: absent

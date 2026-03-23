@@ -1,6 +1,6 @@
 ---
 - name: Bootstrap OpenShift Software Factory
-  hosts: ocp-gpu.rh-lab.morey.tech
+  hosts: openshift_cluster
   gather_facts: false
   module_defaults:
     # See ../docs/decisions/0005-explicit-kubeconfig-for-ansible-k8s-modules.md

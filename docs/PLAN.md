@@ -169,6 +169,26 @@ A working end-to-end developer workflow: Developer Hub scaffolds a new applicati
 
 Source: adapted from [`rhpds/developer-hub-software-templates` `quarkus-web-template`](https://github.com/rhpds/developer-hub-software-templates/tree/main/scaffolder-templates/quarkus-web-template) — the only template in that repo with native `publish:gitlab` + Tekton + ArgoCD support. All other templates in that repo use `publish:github`. Template lives in this repo under `catalog/templates/quarkus-web-template/` and is registered in RHDH via a static catalog location; scaffolded repos are published to the on-cluster GitLab `software-factory` group. No new RHDH plugins required — only built-in scaffolder actions (`fetch:template`, `publish:gitlab`, `catalog:register`).
 
+**GitLab group structure used by Phase 5:**
+```
+software-factory/          ← top-level group; RHDH gitlabOrg discovery targets this
+├── platform/              ← subgroup for platform-owned repos (catalog, shared config)
+│   └── software-factory-catalog   ← repo: catalog-info.yaml for the template; RHDH discovers it automatically
+└── apps/                  ← subgroup for repos scaffolded by the golden path template
+    ├── my-app             ← source repo (created by template)
+    └── my-app-gitops      ← gitops repo (created by template; ArgoCD watches this)
+```
+
+#### 5.0 — GitLab Group Initialization Job
+*Prerequisite for all other Phase 5 tasks. Depends on GitLab instance running and root password Secret existing (Phase 3.1).*
+- [ ] Create `components/gitlab/instance/manifests/gitlab-group-init-job.yaml` (ServiceAccount, Role, RoleBinding, ConfigMap with script, Job)
+  - Sync wave `1` — runs after GitLab CR is `Running` (wave `0`) and root password Secret exists (wave `-1`)
+  - Script polls GitLab health, then uses the root PAT from `rhdh-secrets` (or reads `gitlab-initial-root-password` directly) to call the GitLab API:
+    - `POST /api/v4/groups` — create `software-factory` group (idempotent: skip if already exists)
+    - `POST /api/v4/groups` — create `software-factory/platform` subgroup
+    - `POST /api/v4/groups` — create `software-factory/apps` subgroup
+    - `POST /api/v4/projects` — create `platform/software-factory-catalog` repo with a seed `catalog-info.yaml` that registers the golden path template
+
 #### 5.1 — Tekton Build & Push Pipeline
 *No dependencies — can be implemented first.*
 - [ ] Create `components/openshift-pipelines/instance/manifests/pipeline-build-push.yaml`
@@ -221,25 +241,29 @@ Source: adapted from [`rhpds/developer-hub-software-templates` `quarkus-web-temp
 - [ ] Create `catalog/templates/quarkus-web-template/catalog-info.yaml`
   - `kind: Template`, registers with RHDH
   - Points to `template.yaml` in the same directory
+  - This file is also pushed to `software-factory/platform/software-factory-catalog` by the 5.0 job so RHDH's gitlabOrg discovery picks it up automatically
 - [ ] Create `catalog/templates/quarkus-web-template/template.yaml`
-  - User inputs: `name`, `description`, `owner`, `system`, `gitlabGroup`, `quayNamespace`
-  - GitLab host: read from `GITLAB_HOST` env var injected into RHDH (already in `rhdh-secrets`) — no user input required
+  - User inputs: `name`, `description`, `owner`, `system`, `quayNamespace`
+  - Source repo destination: `software-factory/apps/${{ parameters.name }}` (group fixed; no user input)
+  - GitOps repo destination: `software-factory/apps/${{ parameters.name }}-gitops`
+  - GitLab host: `${GITLAB_HOST}` env var injected from `rhdh-secrets` — no user input required
   - Steps:
     1. `fetch:template` → source skeleton
-    2. `publish:gitlab` → push source repo to `${{ parameters.gitlabGroup }}/${{ parameters.name }}`
+    2. `publish:gitlab` → push source repo to `software-factory/apps/${{ parameters.name }}`
     3. `fetch:template` → GitOps skeleton
-    4. `publish:gitlab` → push GitOps repo to `${{ parameters.gitlabGroup }}/${{ parameters.name }}-gitops`
+    4. `publish:gitlab` → push GitOps repo to `software-factory/apps/${{ parameters.name }}-gitops`
     5. `catalog:register` → register `catalog-info.yaml` from source repo
 
 #### 5.8 — RHDH Catalog Location
-*Depends on 5.7 (catalog-info.yaml must exist at a known path in this repo).*
+*Depends on 5.0 (GitLab `platform/software-factory-catalog` repo must exist) and 5.7 (catalog-info.yaml authored).*
 - [ ] Modify `components/developer-hub/instance/manifests/app-config-rhdh.yaml`
-  - Populate `catalog.locations` with a static entry:
+  - Populate `catalog.locations` with a static entry pointing to the GitLab catalog repo:
     ```yaml
     - type: url
-      target: https://raw.githubusercontent.com/morey-tech/openshift-software-factory/main/catalog/templates/quarkus-web-template/catalog-info.yaml
+      target: https://gitlab.${APPS_DOMAIN}/software-factory/platform/software-factory-catalog/-/raw/main/catalog-info.yaml
     ```
-  - This makes the template available in RHDH immediately on bootstrap, before GitLab is seeded
+  - The `APPS_DOMAIN` variable is already injected from `rhdh-secrets`
+  - The 5.0 job seeds this repo at deploy time, so the template is discoverable as soon as RHDH starts
 
 ### Phase 6 — ACS Integration
 

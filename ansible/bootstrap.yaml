@@ -120,6 +120,21 @@
                 selfHeal: true
                 prune: true
 
+    - name: Wait for AppProjects to exist from openshift-gitops-instance Application
+      kubernetes.core.k8s_info:
+        api_version: argoproj.io/v1alpha1
+        kind: AppProject
+        name: "{{ item }}"
+        namespace: openshift-gitops
+      register: appproject_result
+      until:
+        - appproject_result.resources | length > 0
+      retries: 30
+      delay: 10
+      loop:
+        - operators
+        - operands
+
     # --- Root Application ---
     # See ../docs/decisions/0002-deploy-root-application-with-ansible.md
     - name: Apply the root Argo CD Application

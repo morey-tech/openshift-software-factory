@@ -23,6 +23,38 @@
         name: bootstrap
         namespace: openshift-gitops
 
+    # Terminate any in-progress sync operations after triggering deletion.
+    # Deletion is issued first so auto-sync cannot race against the termination
+    # (a re-triggered sync would fight the cascade). Once the Applications are
+    # marked for deletion, any running syncs are aborted by patching operation
+    # to null via JSON Merge Patch (null removes the key), unblocking deletion.
+    - name: Get all Applications
+      kubernetes.core.k8s_info:
+        api_version: argoproj.io/v1alpha1
+        kind: Application
+        namespace: openshift-gitops
+      register: all_apps
+
+    - name: Terminate running sync operations
+      kubernetes.core.k8s:
+        state: patched
+        api_version: argoproj.io/v1alpha1
+        kind: Application
+        name: "{{ item.metadata.name }}"
+        namespace: openshift-gitops
+        merge_type: merge
+        definition:
+          operation: null
+      loop: >-
+        {{
+          all_apps.resources
+          | selectattr('status.operationState', 'defined')
+          | selectattr('status.operationState.phase', 'equalto', 'Running')
+          | list
+        }}
+      loop_control:
+        label: "{{ item.metadata.name }}"
+
     # Explicitly delete ApplicationSets in case the bootstrap cascade finalizer did not
     # propagate (e.g. if the Application was created without the cascade finalizer).
     # state: absent is idempotent — no-op if already deleted by the cascade above.
@@ -162,10 +194,11 @@
         kind: Namespace
         name: "{{ item }}"
       loop:
-        - gitlab-system
-        - rhdh
-        - quay-registry
-        - openshift-devspaces
+        - gitlab-system        # gitlab operator + instance (shared namespace)
+        - rhdh                 # developer-hub instance
+        - rhdh-operator        # developer-hub operator
+        - quay-operator        # quay operator + instance (shared namespace)
+        - openshift-devspaces  # dev spaces instance (operator is in openshift-operators)
 
     - name: Wait for operator namespaces to terminate
       kubernetes.core.k8s_info:
@@ -179,5 +212,6 @@
       loop:
         - gitlab-system
         - rhdh
-        - quay-registry
+        - rhdh-operator
+        - quay-operator
         - openshift-devspaces

@@ -8,6 +8,10 @@ The Software Factory shifts an IT organization's focus from infrastructure hosti
 
 See [docs/capabilities.md](docs/capabilities.md) for a full breakdown of capabilities by SDLC phase.
 
+## Status
+
+> **Under active development.** Core GitOps bootstrap, operators, and several operands are complete. Developer Hub configuration, optional org-wide services, and the golden-path template are in progress. See the [Project Plan](docs/PLAN.md) for the full phase-by-phase breakdown.
+
 ## How it works
 
 ```

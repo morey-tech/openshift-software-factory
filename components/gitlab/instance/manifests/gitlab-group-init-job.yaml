@@ -1,0 +1,101 @@
+# Creates the software-factory GitLab group hierarchy and seeds the
+# software-factory-catalog repo for RHDH golden path template discovery.
+# See docs/PLAN.md Phase 5.0.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: job-gitlab-group-init
+  namespace: gitlab-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: job-gitlab-group-init
+  namespace: gitlab-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+    resourceNames: ["gitlab-initial-root-password"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: job-gitlab-group-init
+  namespace: gitlab-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+subjects:
+  - kind: ServiceAccount
+    name: job-gitlab-group-init
+    namespace: gitlab-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: job-gitlab-group-init
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: job-gitlab-group-init
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+  - apiGroups: ["config.openshift.io"]
+    resources: ["ingresses"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: job-gitlab-group-init
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+subjects:
+  - kind: ServiceAccount
+    name: job-gitlab-group-init
+    namespace: gitlab-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: job-gitlab-group-init
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-gitlab-group-init
+  namespace: gitlab-system
+  annotations:
+    # Run after the GitLab CR (wave 0) is applied and the root password
+    # Secret (wave -1) exists. GitLab will not be healthy until after the
+    # CR is reconciled, and the script polls until it is.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  template:
+    spec:
+      containers:
+        - name: group-init
+          image: registry.redhat.io/openshift4/ose-cli
+          command:
+            - /bin/bash
+            - -c
+            - /scripts/gitlab-group-init-job.sh
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: job-gitlab-group-init
+            defaultMode: 0755
+      restartPolicy: Never
+      serviceAccountName: job-gitlab-group-init
+  # activeDeadlineSeconds covers the full health-poll window (60 min) plus
+  # time for the API calls (~5 min), with a generous buffer.
+  activeDeadlineSeconds: 4200
+  backoffLimit: 4

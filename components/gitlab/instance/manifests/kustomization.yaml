@@ -17,8 +17,15 @@ configMapGenerator:
         argocd.argoproj.io/sync-wave: "-2"
     files:
       - gitlab-domain-init-job.sh
+  - name: job-gitlab-group-init
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"
+    files:
+      - gitlab-group-init-job.sh
 
 resources:
   - gitlab-domain-init-job.yaml
+  - gitlab-group-init-job.yaml
   - gitlab-root-password-job.yaml
   - gitlab.yaml

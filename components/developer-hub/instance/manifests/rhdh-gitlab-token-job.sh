@@ -15,8 +15,38 @@ GITLAB_SECRET_NAMESPACE="gitlab-system"
 
 echo "Checking if ${SECRET_NAME} already exists..."
 if oc get secret "${SECRET_NAME}" -n "${SECRET_NAMESPACE}" &>/dev/null; then
-  echo "Secret ${SECRET_NAME} already exists, nothing to do."
-  exit 0
+  # Check which required fields are present.
+  # GITLAB_TOKEN and BACKEND_SECRET are generated (rotating them would break existing sessions)
+  # so they are never overwritten. APPS_DOMAIN is stable and safe to patch in if missing.
+  _field_value() {
+    oc get secret "${SECRET_NAME}" -n "${SECRET_NAMESPACE}" \
+      -o jsonpath="{.data.$1}" 2>/dev/null | base64 -d 2>/dev/null || true
+  }
+
+  HAS_TOKEN=$(_field_value GITLAB_TOKEN)
+  HAS_SECRET=$(_field_value BACKEND_SECRET)
+  HAS_DOMAIN=$(_field_value APPS_DOMAIN)
+
+  if [[ -n "${HAS_TOKEN}" && -n "${HAS_SECRET}" && -n "${HAS_DOMAIN}" ]]; then
+    echo "Secret ${SECRET_NAME} already has all required fields, nothing to do."
+    exit 0
+  fi
+
+  if [[ -n "${HAS_TOKEN}" && -n "${HAS_SECRET}" && -z "${HAS_DOMAIN}" ]]; then
+    # Secret was created before APPS_DOMAIN was added — patch it in without touching
+    # the generated fields.
+    echo "Secret ${SECRET_NAME} exists but is missing APPS_DOMAIN — patching..."
+    APPS_DOMAIN=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')
+    oc patch secret "${SECRET_NAME}" -n "${SECRET_NAMESPACE}" \
+      --type=merge \
+      --patch "{\"stringData\":{\"APPS_DOMAIN\":\"${APPS_DOMAIN}\"}}"
+    echo "Patched APPS_DOMAIN='${APPS_DOMAIN}' into ${SECRET_NAME}."
+    exit 0
+  fi
+
+  # Generated fields are missing — delete so the full creation flow runs.
+  echo "Secret ${SECRET_NAME} is missing generated fields, deleting for recreation..."
+  oc delete secret "${SECRET_NAME}" -n "${SECRET_NAMESPACE}"
 fi
 
 echo "Discovering apps domain from cluster ingress config..."

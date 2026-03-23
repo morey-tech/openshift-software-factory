@@ -144,3 +144,16 @@
               automated:
                 selfHeal: true
                 prune: true
+
+    # --- Output ---
+    - name: Get Argo CD server Route
+      kubernetes.core.k8s_info:
+        api_version: route.openshift.io/v1
+        kind: Route
+        name: software-factory-argocd-server
+        namespace: openshift-gitops
+      register: argocd_route
+
+    - name: Print Argo CD URL
+      ansible.builtin.debug:
+        msg: "Argo CD is available at: https://{{ argocd_route.resources[0].spec.host }}"

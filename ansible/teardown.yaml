@@ -23,6 +23,20 @@
         name: bootstrap
         namespace: openshift-gitops
 
+    # Explicitly delete ApplicationSets in case the bootstrap cascade finalizer did not
+    # propagate (e.g. if the Application was created without the cascade finalizer).
+    # state: absent is idempotent — no-op if already deleted by the cascade above.
+    - name: Delete ApplicationSets
+      kubernetes.core.k8s:
+        state: absent
+        api_version: argoproj.io/v1alpha1
+        kind: ApplicationSet
+        name: "{{ item }}"
+        namespace: openshift-gitops
+      loop:
+        - operators
+        - operands
+
     # Wait for all cascade-managed Applications to be removed before proceeding.
     # The bootstrap Application's finalizer removes the ApplicationSets, which in
     # turn cascade-delete their child Applications. The bootstrap CR itself may

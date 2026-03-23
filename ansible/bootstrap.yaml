@@ -146,6 +146,8 @@
           metadata:
             name: bootstrap
             namespace: openshift-gitops
+            finalizers:
+              - resources-finalizer.argocd.argoproj.io
           spec:
             project: default
             source:

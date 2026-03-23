@@ -17,9 +17,11 @@ spec:
   channel: stable
   # OLM INSTALL IS EXPERIMENTAL — GitLab does not provide support for OLM-deployed
   # instances. See https://docs.gitlab.com/operator/installation/?tab=OpenShift
-  # InstallPlanApproval is set to Manual per GitLab's OpenShift recommendation to
-  # prevent unintended operator upgrades (chart version is pinned in the GitLab CR).
-  installPlanApproval: Manual
+  # InstallPlanApproval is set to Automatic so that Argo CD can sync the operator
+  # without manual InstallPlan approval during bootstrap. The GitLab chart version
+  # is pinned in the GitLab CR, so operator upgrades do not affect the deployed
+  # instance. See docs/decisions/0021-automatic-installplan-approval-for-gitlab-operator.md
+  installPlanApproval: Automatic
   name: gitlab-operator-kubernetes
   source: gitlab-operator-catalog
   sourceNamespace: openshift-marketplace

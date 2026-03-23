@@ -167,21 +167,79 @@ These are not required for the core software factory but elevate the setup.
 
 A working end-to-end developer workflow: Developer Hub scaffolds a new application, Pipelines build and test it, Argo CD deploys it, and Dev Spaces provides a ready-to-code workspace. See [capabilities.md](capabilities.md) for the full rationale.
 
-Source: adapted from [`rhpds/developer-hub-software-templates` `quarkus-web-template`](https://github.com/rhpds/developer-hub-software-templates/tree/main/scaffolder-templates/quarkus-web-template) — the only template in that repo with native `publish:gitlab` + Tekton + ArgoCD support. All other templates in that repo use `publish:github`. Template lives in this repo under `catalog/templates/quarkus-web-template/` and is registered in RHDH via a static catalog location; scaffolded repos are published to the on-cluster GitLab `software-factory` group.
+Source: adapted from [`rhpds/developer-hub-software-templates` `quarkus-web-template`](https://github.com/rhpds/developer-hub-software-templates/tree/main/scaffolder-templates/quarkus-web-template) — the only template in that repo with native `publish:gitlab` + Tekton + ArgoCD support. All other templates in that repo use `publish:github`. Template lives in this repo under `catalog/templates/quarkus-web-template/` and is registered in RHDH via a static catalog location; scaffolded repos are published to the on-cluster GitLab `software-factory` group. No new RHDH plugins required — only built-in scaffolder actions (`fetch:template`, `publish:gitlab`, `catalog:register`).
 
-- [ ] **Tekton Build & Push Pipeline** (`components/openshift-pipelines/instance/manifests/pipeline-build-push.yaml`)
-  - Cluster-level `Pipeline` with tasks: `git-clone` → `buildah` (build OCI image) → push to Quay → `git-cli` write-back (update image tag in GitOps repo)
-- [ ] **Software Template** (`catalog/templates/quarkus-web-template/`)
-  - `template.yaml` — adapted from upstream: dynamic GitLab host, `openshift-gitops` ArgoCD namespace, Quay registry inputs
-  - `skeleton/` — Quarkus starter source, `Containerfile`, `devfile.yaml`, `catalog-info.yaml`, `.tekton/pipeline.yaml` + `.tekton/pipelinerun.yaml`
-  - No new RHDH plugins required — scaffolder actions used: `fetch:template` → `publish:gitlab` (source repo) → `fetch:template` → `publish:gitlab` (GitOps repo with ArgoCD `Application`) → `catalog:register`
-- [ ] **RHDH catalog location** (`components/developer-hub/instance/manifests/app-config-rhdh.yaml`)
-  - Add static location pointing to `catalog/templates/quarkus-web-template/catalog-info.yaml` in this repo so the template is available before any GitLab repos exist
-- [ ] **Dev Spaces devfile** (`catalog/templates/quarkus-web-template/skeleton/devfile.yaml`)
-  - UBI-based workspace image with common tooling, VS Code extensions (Java, Git, linting), Git remote pre-configured from scaffold inputs
-- [ ] **Argo CD auto-deploy**
-  - Template scaffolds a dedicated GitOps repo in GitLab with an ArgoCD `Application` manifest (Kustomize overlay per environment)
-  - ArgoCD syncs it automatically via the existing `openshift-gitops` instance; no ApplicationSet changes needed
+#### 5.1 — Tekton Build & Push Pipeline
+*No dependencies — can be implemented first.*
+- [ ] Create `components/openshift-pipelines/instance/manifests/pipeline-build-push.yaml`
+  - Cluster-scoped `Pipeline` named `build-and-push`
+  - Tasks in order: `git-clone` → `buildah` (build + push OCI image to Quay) → `git-cli` (write image digest back to GitOps repo)
+  - Workspace bindings: shared source workspace, Quay push secret, GitLab SSH/token for write-back
+
+#### 5.2 — App Source Skeleton
+*No dependencies — can be implemented in parallel with 5.1.*
+- [ ] Create `catalog/templates/quarkus-web-template/skeleton/` source files:
+  - `pom.xml` — Quarkus BOM, `quarkus-resteasy-reactive` starter dependency
+  - `src/main/java/.../GreetingResource.java` — minimal REST endpoint
+  - `src/main/resources/application.properties` — Quarkus config (port, health endpoint)
+  - `Containerfile` — multi-stage build: Maven compile → UBI minimal runtime image
+  - `.gitignore`, `README.md`
+
+#### 5.3 — App Dev Spaces Devfile
+*No dependencies — can be implemented in parallel with 5.1 and 5.2.*
+- [ ] Create `catalog/templates/quarkus-web-template/skeleton/devfile.yaml`
+  - Base image: `registry.access.redhat.com/ubi9/openjdk-21` (or Red Hat Dev Spaces UDI)
+  - Components: main dev container + volume mount for Maven cache
+  - Commands: `mvn quarkus:dev` for hot-reload, `mvn package` for build
+  - Git remote pre-wired via template variable `${{ values.repoUrl }}`
+
+#### 5.4 — App Tekton Skeleton
+*Depends on 5.1 (pipeline name `build-and-push` must be known).*
+- [ ] Create `catalog/templates/quarkus-web-template/skeleton/.tekton/pipelinerun.yaml`
+  - References the cluster `Pipeline` `build-and-push` by name
+  - Params: image name (`quay.io/${{ values.quayNamespace }}/${{ values.name }}`), GitOps repo URL
+  - Workspace references: PVC for source, secret refs for Quay and GitLab credentials
+
+#### 5.5 — App Catalog Metadata Skeleton
+*No dependencies.*
+- [ ] Create `catalog/templates/quarkus-web-template/skeleton/catalog-info.yaml`
+  - `kind: Component`, `type: service`, `lifecycle: experimental`
+  - Backstage template variables: `${{ values.name }}`, `${{ values.owner }}`, `${{ values.system }}`
+  - Annotations: ArgoCD app link, Tekton pipeline link, GitLab source URL, Dev Spaces workspace URL
+
+#### 5.6 — GitOps Repo Skeleton
+*No dependencies — defines the ArgoCD Application and Kustomize manifests for the scaffolded app.*
+- [ ] Create `catalog/templates/quarkus-web-template/gitops-skeleton/`:
+  - `base/deployment.yaml` — Deployment with image placeholder (`image: PLACEHOLDER`)
+  - `base/service.yaml` — ClusterIP Service
+  - `base/kustomization.yaml` — lists base resources
+  - `overlays/dev/kustomization.yaml` — patches image tag, sets namespace `${{ values.name }}-dev`
+  - `argocd-application.yaml` — ArgoCD `Application` targeting `overlays/dev`, namespace `openshift-gitops`, project `operands`
+
+#### 5.7 — Template Catalog-Info & template.yaml
+*Depends on 5.2–5.6 (skeleton content and gitops-skeleton must be defined so template steps can reference them).*
+- [ ] Create `catalog/templates/quarkus-web-template/catalog-info.yaml`
+  - `kind: Template`, registers with RHDH
+  - Points to `template.yaml` in the same directory
+- [ ] Create `catalog/templates/quarkus-web-template/template.yaml`
+  - User inputs: `name`, `description`, `owner`, `system`, `gitlabGroup`, `quayNamespace`
+  - GitLab host: read from `GITLAB_HOST` env var injected into RHDH (already in `rhdh-secrets`) — no user input required
+  - Steps:
+    1. `fetch:template` → source skeleton
+    2. `publish:gitlab` → push source repo to `${{ parameters.gitlabGroup }}/${{ parameters.name }}`
+    3. `fetch:template` → GitOps skeleton
+    4. `publish:gitlab` → push GitOps repo to `${{ parameters.gitlabGroup }}/${{ parameters.name }}-gitops`
+    5. `catalog:register` → register `catalog-info.yaml` from source repo
+
+#### 5.8 — RHDH Catalog Location
+*Depends on 5.7 (catalog-info.yaml must exist at a known path in this repo).*
+- [ ] Modify `components/developer-hub/instance/manifests/app-config-rhdh.yaml`
+  - Populate `catalog.locations` with a static entry:
+    ```yaml
+    - type: url
+      target: https://raw.githubusercontent.com/morey-tech/openshift-software-factory/main/catalog/templates/quarkus-web-template/catalog-info.yaml
+    ```
+  - This makes the template available in RHDH immediately on bootstrap, before GitLab is seeded
 
 ### Phase 6 — ACS Integration
 

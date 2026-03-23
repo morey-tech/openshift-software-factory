@@ -1,7 +1,10 @@
 # GitLab Community Edition instance deployed via the GitLab Operator.
 #
-# The cluster apps domain is injected into spec.chart.values.global.hosts.domain
-# at build time via Kustomize replacements from cluster-config.yaml.
+# spec.chart.values.global.hosts.domain is intentionally absent from this
+# manifest. It is discovered at sync time from the cluster's ingress config by
+# job-gitlab-domain-init (wave 1) and patched directly onto this CR.
+# Server-Side Apply (SSA) ensures Argo CD never owns that field, so selfHeal
+# will not revert the value. See docs/decisions/0022-runtime-apps-domain-discovery-for-gitlab.md
 #
 # The operator chart version must match a version supported by the installed
 # operator. Find supported versions with:
@@ -13,6 +16,8 @@ kind: GitLab
 metadata:
   name: gitlab
   namespace: gitlab-system
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
 spec:
   chart:
     # Pin to a specific GitLab chart version supported by the installed operator.
@@ -22,8 +27,7 @@ spec:
       global:
         edition: ce
         hosts:
-          # Injected at build time by Kustomize replacements from cluster-config.yaml.
-          domain: CLUSTER_BASE_DOMAIN
+          # domain is set at runtime by job-gitlab-domain-init — see ADR-0022.
           https: true
         initialRootPassword:
           secret: gitlab-initial-root-password

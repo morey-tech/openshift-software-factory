@@ -12,8 +12,6 @@ JOB_NAME="job-rhdh-gitlab-token"
 JOB_NAMESPACE="rhdh"
 GITLAB_SECRET_NAME="gitlab-initial-root-password"
 GITLAB_SECRET_NAMESPACE="gitlab-system"
-CLUSTER_CONFIG_NAME="cluster-config"
-CLUSTER_CONFIG_NAMESPACE="gitlab-system"
 
 echo "Checking if ${SECRET_NAME} already exists..."
 if oc get secret "${SECRET_NAME}" -n "${SECRET_NAMESPACE}" &>/dev/null; then
@@ -21,9 +19,9 @@ if oc get secret "${SECRET_NAME}" -n "${SECRET_NAMESPACE}" &>/dev/null; then
   exit 0
 fi
 
-echo "Reading GitLab apps domain from cluster-config..."
-APPS_DOMAIN=$(oc get configmap "${CLUSTER_CONFIG_NAME}" -n "${CLUSTER_CONFIG_NAMESPACE}" \
-  -o jsonpath='{.data.appsDomain}')
+echo "Discovering apps domain from cluster ingress config..."
+APPS_DOMAIN=$(oc get ingresses.config.openshift.io cluster \
+  -o jsonpath='{.spec.domain}')
 GITLAB_URL="https://gitlab.${APPS_DOMAIN}"
 echo "GitLab URL: ${GITLAB_URL}"
 

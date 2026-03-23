@@ -11,20 +11,14 @@ configMapGenerator:
         argocd.argoproj.io/sync-wave: "-2"
     files:
       - gitlab-root-password-job.sh
+  - name: job-gitlab-domain-init
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"
+    files:
+      - gitlab-domain-init-job.sh
 
 resources:
-  - cluster-config.yaml
+  - gitlab-domain-init-job.yaml
   - gitlab-root-password-job.yaml
   - gitlab.yaml
-
-replacements:
-  - source:
-      kind: ConfigMap
-      name: cluster-config
-      fieldPath: data.appsDomain
-    targets:
-      - select:
-          kind: GitLab
-          name: gitlab
-        fieldPaths:
-          - spec.chart.values.global.hosts.domain

@@ -1,0 +1,101 @@
+# Discovers the cluster apps domain at sync time and patches it into the GitLab
+# CR. Because spec.chart.values.global.hosts.domain is absent from gitlab.yaml
+# and SSA is enabled on that CR, Argo CD never takes field ownership of the
+# domain — selfHeal will not revert the value set here.
+#
+# See docs/decisions/0022-runtime-apps-domain-discovery-for-gitlab.md
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: job-gitlab-domain-init
+  namespace: gitlab-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+---
+# Allows the Job to read the cluster ingress config (cluster-scoped resource).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: job-gitlab-domain-init
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+  - apiGroups: ["config.openshift.io"]
+    resources: ["ingresses"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: job-gitlab-domain-init
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+subjects:
+  - kind: ServiceAccount
+    name: job-gitlab-domain-init
+    namespace: gitlab-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: job-gitlab-domain-init
+---
+# Allows the Job to read and patch the GitLab CR in gitlab-system.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: job-gitlab-domain-init
+  namespace: gitlab-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+  - apiGroups: ["apps.gitlab.com"]
+    resources: ["gitlabs"]
+    verbs: ["get", "patch"]
+    resourceNames: ["gitlab"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: job-gitlab-domain-init
+  namespace: gitlab-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+subjects:
+  - kind: ServiceAccount
+    name: job-gitlab-domain-init
+    namespace: gitlab-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: job-gitlab-domain-init
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-gitlab-domain-init
+  namespace: gitlab-system
+  annotations:
+    # Run after wave 0 (GitLab CR) so the CR exists before patching.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  template:
+    spec:
+      containers:
+        - name: domain-init
+          image: registry.redhat.io/openshift4/ose-cli
+          command:
+            - /bin/bash
+            - -c
+            - /scripts/gitlab-domain-init-job.sh
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: job-gitlab-domain-init
+            defaultMode: 0755
+      restartPolicy: Never
+      serviceAccountName: job-gitlab-domain-init
+  backoffLimit: 4

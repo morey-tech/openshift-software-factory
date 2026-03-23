@@ -1,8 +1,9 @@
 # Generates the rhdh-secrets Secret at deploy time by calling the GitLab API
 # to create a personal access token for the root user.
 #
-# The Job reads the GitLab root password from gitlab-system and writes
-# the rhdh-secrets Secret into the rhdh namespace.
+# The Job reads the GitLab root password from gitlab-system, discovers the
+# apps domain from the cluster ingress config, and writes the rhdh-secrets
+# Secret into the rhdh namespace.
 #
 # See docs/decisions/0020-gitlab-token-job-for-rhdh.md and ADR-0018.
 ---
@@ -46,7 +47,7 @@ roleRef:
   kind: Role
   name: job-rhdh-gitlab-token
 ---
-# Allows the Job (running in rhdh) to read from gitlab-system.
+# Allows the Job (running in rhdh) to read the GitLab root password from gitlab-system.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -59,10 +60,6 @@ rules:
     resources: ["secrets"]
     verbs: ["get"]
     resourceNames: ["gitlab-initial-root-password"]
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["get"]
-    resourceNames: ["cluster-config"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -79,6 +76,33 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: job-rhdh-gitlab-token-reader
+---
+# Allows the Job to read the cluster apps domain from the OpenShift ingress config.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: job-rhdh-gitlab-token
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+  - apiGroups: ["config.openshift.io"]
+    resources: ["ingresses"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: job-rhdh-gitlab-token
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+subjects:
+  - kind: ServiceAccount
+    name: job-rhdh-gitlab-token
+    namespace: rhdh
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: job-rhdh-gitlab-token
 ---
 apiVersion: batch/v1
 kind: Job

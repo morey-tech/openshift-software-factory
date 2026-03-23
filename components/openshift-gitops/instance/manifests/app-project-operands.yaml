@@ -12,9 +12,15 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: '*'
   # Namespace creation required for CreateNamespace=true sync option.
+  # ClusterRole/ClusterRoleBinding required for Jobs that need cluster-scoped API access
+  # (e.g. reading ingresses.config.openshift.io for apps domain discovery).
   clusterResourceWhitelist:
     - group: ''
       kind: Namespace
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
   namespaceResourceWhitelist:
     - group: '*'
       kind: '*'

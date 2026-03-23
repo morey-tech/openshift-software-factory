@@ -11,7 +11,13 @@ Before running either playbook, ensure:
 
 ## Usage
 
-Bootstrap the cluster:
+Before bootstrapping, update the `appsDomain` in [components/gitlab/instance/manifests/cluster-config.yaml](../components/gitlab/instance/manifests/cluster-config.yaml) to match your cluster's apps subdomain (see [ADR-0019](../docs/decisions/0019-kustomize-replacements-for-cluster-specific-values.md)):
+
+```bash
+oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'
+```
+
+Then bootstrap the cluster:
 
 ```bash
 ansible-playbook bootstrap.yaml

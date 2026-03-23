@@ -10,7 +10,7 @@ See [docs/capabilities.md](docs/capabilities.md) for a full breakdown of capabil
 
 ## Status
 
-> **Under active development.** Core GitOps bootstrap, operators, and several operands are complete. Developer Hub configuration, optional org-wide services, and the golden-path template are in progress. See the [Project Plan](docs/PLAN.md) for the full phase-by-phase breakdown.
+**Under active development.** Core GitOps bootstrap, operators, and several operands are complete. Developer Hub configuration, optional org-wide services, and the golden-path template are in progress. See the [Project Plan](docs/PLAN.md) for the full phase-by-phase breakdown.
 
 ## How it works
 
@@ -28,11 +28,13 @@ Adding a component means adding a folder under `components/` with `operator/` an
 ## Repository Structure
 
 ```
-ansible/          # Bootstrap playbook and inventory
-bootstrap/        # Root Argo CD Application and ApplicationSets
+ansible/          # Bootstrap playbook, teardown playbook, and root Application manifest
+bootstrap/        # ApplicationSets (operators + operands) — managed by Argo CD
 components/       # Per-component operator and instance manifests
 docs/             # Architecture docs, ADRs, and project plan
 ```
+
+The root Argo CD Application is applied by the Ansible playbook rather than stored in `bootstrap/`, avoiding a circular self-management dependency. See [ADR-0002](docs/decisions/0002-deploy-root-application-with-ansible.md) for the rationale.
 
 ## Getting Started
 
@@ -43,6 +45,10 @@ See the [Ansible README](ansible/README.md) for prerequisites, inventory setup, 
 - [Platform Capabilities](docs/capabilities.md)
 - [Project Plan](docs/PLAN.md)
 - [Architecture Decision Records](docs/decisions/)
+
+### Architecture Decision Records
+
+Key design choices are captured as ADRs in [docs/decisions/](docs/decisions/). Each ADR documents the context, the options considered, and the rationale for the chosen approach. When a decision affects how you extend or operate this repository, the relevant ADR is referenced inline. Reading the ADRs is the fastest way to understand *why* the system is structured the way it is, not just *how* it works.
 
 ## License
 

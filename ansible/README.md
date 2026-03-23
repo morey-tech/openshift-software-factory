@@ -2,6 +2,13 @@
 
 This directory contains the Ansible playbooks used to bootstrap and tear down an OpenShift cluster running the Software Factory.
 
+## Prerequisites
+
+Before running either playbook, ensure:
+
+1. **Cluster access** — the `oc` CLI must be authenticated against the target cluster, or `KUBECONFIG` must be set. Both playbooks use the active cluster context; no inventory or SSH is involved.
+2. **Cluster requirements** — the cluster must satisfy all prerequisites described in [docs/prerequisites.md](../docs/prerequisites.md) (storage class, object storage, cert-manager, and Ansible dependencies).
+
 ## Usage
 
 Bootstrap the cluster:

@@ -181,7 +181,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 
 #### 5.0 — GitLab Group Initialization Job
 *Prerequisite for all other Phase 5 tasks. Depends on GitLab instance running and root password Secret existing (Phase 3.1).*
-- [x] Create `components/gitlab/instance/manifests/gitlab-group-init-job.yaml` (ServiceAccount, Role, RoleBinding, ConfigMap with script, Job)
+- [x] Create `components/gitlab/instance/manifests/gitlab-platform-init-job.yaml` (ServiceAccount, Role, RoleBinding, ConfigMap with script, Job)
   - Sync wave `1` — runs after GitLab CR is `Running` (wave `0`) and root password Secret exists (wave `-1`)
   - Script polls GitLab health, then uses the root PAT from `rhdh-secrets` (or reads `gitlab-initial-root-password` directly) to call the GitLab API:
     - `POST /api/v4/groups` — create `software-factory` group (idempotent: skip if already exists)
@@ -276,9 +276,9 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
   - `argocd.appLocatorMethods` also uses the in-cluster SVC URL (server-to-server, no ingress needed)
   - See [ADR-0028](decisions/0028-argocd-local-user-and-rhdh-proxy.md)
 
-#### 5.7.2 — Update gitlab-group-init-job catalog seed URL
+#### 5.7.2 — Update gitlab-platform-init-job catalog seed URL
 *Depends on 5.7 (catalog-info.yaml authored). The init job currently seeds a Location pointing to the GitHub raw URL; for on-cluster use it should point to the GitLab-hosted copy.*
-- [x] Update `components/gitlab/instance/manifests/gitlab-group-init-job.sh`
+- [x] Update `components/gitlab/instance/manifests/gitlab-platform-init-job.sh`
   - Replace the wrapper Location (pointing to GitHub) with the actual template `catalog-info.yaml` content (`kind: Location, targets: [./template.yaml]`)
   - Also seed `template.yaml` into `software-factory-catalog` so the relative `./template.yaml` reference resolves to the on-cluster GitLab URL automatically — no GitHub dependency
   - Both files are inlined as single-quoted heredocs so `${{...}}` template syntax passes through verbatim

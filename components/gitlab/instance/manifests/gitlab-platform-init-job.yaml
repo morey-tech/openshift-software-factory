@@ -1,11 +1,13 @@
-# Creates the software-factory GitLab group hierarchy and seeds the
-# software-factory-catalog repo for RHDH golden path template discovery.
-# See docs/PLAN.md Phase 5.0.
+# Initialises the GitLab platform structure required by the software factory:
+#   - Creates the software-factory group hierarchy (top-level, platform, apps)
+#   - Creates the software-factory-catalog project under platform
+#   - Seeds catalog-info.yaml and template.yaml for RHDH golden path discovery
+# See docs/PLAN.md Phase 5.0 and docs/decisions/0024-gitlab-platform-init-job-for-bootstrap.md
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: job-gitlab-group-init
+  name: job-gitlab-platform-init
   namespace: gitlab-system
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
@@ -13,7 +15,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: job-gitlab-group-init
+  name: job-gitlab-platform-init
   namespace: gitlab-system
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
@@ -26,23 +28,23 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: job-gitlab-group-init
+  name: job-gitlab-platform-init
   namespace: gitlab-system
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 subjects:
   - kind: ServiceAccount
-    name: job-gitlab-group-init
+    name: job-gitlab-platform-init
     namespace: gitlab-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: job-gitlab-group-init
+  name: job-gitlab-platform-init
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: job-gitlab-group-init
+  name: job-gitlab-platform-init
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 rules:
@@ -53,22 +55,22 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: job-gitlab-group-init
+  name: job-gitlab-platform-init
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 subjects:
   - kind: ServiceAccount
-    name: job-gitlab-group-init
+    name: job-gitlab-platform-init
     namespace: gitlab-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: job-gitlab-group-init
+  name: job-gitlab-platform-init
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: job-gitlab-group-init
+  name: job-gitlab-platform-init
   namespace: gitlab-system
   annotations:
     # Run after the GitLab CR (wave 0) is applied and the root password
@@ -79,22 +81,22 @@ spec:
   template:
     spec:
       containers:
-        - name: group-init
+        - name: platform-init
           image: registry.redhat.io/openshift4/ose-cli
           command:
             - /bin/bash
             - -c
-            - /scripts/gitlab-group-init-job.sh
+            - /scripts/gitlab-platform-init-job.sh
           volumeMounts:
             - name: scripts
               mountPath: /scripts
       volumes:
         - name: scripts
           configMap:
-            name: job-gitlab-group-init
+            name: job-gitlab-platform-init
             defaultMode: 0755
       restartPolicy: Never
-      serviceAccountName: job-gitlab-group-init
+      serviceAccountName: job-gitlab-platform-init
   # activeDeadlineSeconds covers the full health-poll window (60 min) plus
   # time for the API calls (~5 min), with a generous buffer.
   activeDeadlineSeconds: 4200

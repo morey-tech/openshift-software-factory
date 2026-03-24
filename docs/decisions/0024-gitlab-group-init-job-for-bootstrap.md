@@ -50,8 +50,8 @@ Three files are added to `components/gitlab/instance/manifests/`:
 
 | File | Purpose |
 |------|---------|
-| `gitlab-group-init-job.yaml` | `ServiceAccount`, `Role`/`RoleBinding`, `ClusterRole`/`ClusterRoleBinding`, and `Job` |
-| `gitlab-group-init-job.sh` | Shell script (mounted via ConfigMap); idempotency check, group creation, catalog seeding |
+| `gitlab-platform-init-job.yaml` | `ServiceAccount`, `Role`/`RoleBinding`, `ClusterRole`/`ClusterRoleBinding`, and `Job` |
+| `gitlab-platform-init-job.sh` | Shell script (mounted via ConfigMap); idempotency check, group creation, catalog seeding |
 | `kustomization.yaml` | `configMapGenerator` entry to bundle the script |
 
 The Job script:
@@ -114,7 +114,7 @@ No `get jobs` permission is needed because this Job does not create Secrets with
 ### Confirmation
 
 Deployment is confirmed when:
-- `oc get job job-gitlab-group-init -n gitlab-system -o jsonpath='{.status.succeeded}'` returns `1`
+- `oc get job job-gitlab-platform-init -n gitlab-system -o jsonpath='{.status.succeeded}'` returns `1`
 - The groups `software-factory`, `software-factory/platform`, and `software-factory/apps`
   are visible in the GitLab UI
 - `software-factory/platform/software-factory-catalog` exists and contains `catalog-info.yaml`

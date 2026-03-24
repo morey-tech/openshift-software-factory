@@ -64,7 +64,7 @@ data:
             - API
 
       # Static seed location — points to the software-factory-catalog repo seeded by
-      # the gitlab-group-init-job (Phase 5.0). RHDH loads this at startup so the
+      # the gitlab-platform-init-job (Phase 5.0). RHDH loads this at startup so the
       # golden path template is immediately discoverable without waiting for the next
       # gitlabOrg sync cycle.
       locations:

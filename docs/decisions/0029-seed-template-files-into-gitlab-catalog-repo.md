@@ -7,7 +7,7 @@ date: 2026-03-24
 
 ## Context and Problem Statement
 
-The `gitlab-group-init-job` seeds a `catalog-info.yaml` into the
+The `gitlab-platform-init-job` seeds a `catalog-info.yaml` into the
 `software-factory/platform/software-factory-catalog` GitLab repo at deploy time.
 RHDH's `gitlabOrg` catalog provider discovers this file and registers whatever
 entities it describes.
@@ -30,7 +30,7 @@ self-contained, works air-gapped, and is consistent with the version deployed?
   in restricted / air-gapped environments
 * The template version discovered by RHDH should match the version that was deployed
 * Minimal indirection — fewer network hops during RHDH catalog refresh
-* Consistent with the existing pattern of the `gitlab-group-init-job` owning all
+* Consistent with the existing pattern of the `gitlab-platform-init-job` owning all
   bootstrap content in `software-factory-catalog`
 
 ## Considered Options
@@ -53,7 +53,7 @@ in-cluster template is always the version that was built into this deployment.
 
 ### Implementation
 
-The `gitlab-group-init-job.sh` script is updated to seed two files into
+The `gitlab-platform-init-job.sh` script is updated to seed two files into
 `software-factory/platform/software-factory-catalog` after creating the project:
 
 | File | Content |

@@ -5,15 +5,15 @@ generatorOptions:
   disableNameSuffixHash: true
 
 configMapGenerator:
-  - name: job-rhdh-gitlab-token
+  - name: job-rhdh-secrets-init
     options:
       annotations:
         argocd.argoproj.io/sync-wave: "-2"
     files:
-      - rhdh-gitlab-token-job.sh
+      - rhdh-secrets-init-job.sh
 
 resources:
-  - rhdh-gitlab-token-job.yaml
+  - rhdh-secrets-init-job.yaml
   - dynamic-plugins-root-pvc.yaml
   - dynamic-plugins-rhdh.yaml
   - app-config-rhdh.yaml

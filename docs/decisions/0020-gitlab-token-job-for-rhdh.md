@@ -43,9 +43,13 @@ Four files are added to `components/developer-hub/instance/manifests/`:
 
 | File | Purpose |
 |------|---------|
-| `rhdh-gitlab-token-job.yaml` | `ServiceAccount`, `Role`/`RoleBinding` in `rhdh`, `Role`/`RoleBinding` in `gitlab-system`, and `Job` |
-| `rhdh-gitlab-token-job.sh` | Shell script (mounted via ConfigMap); idempotency check, API calls, Secret creation |
+| `rhdh-secrets-init-job.yaml` | `ServiceAccount`, `Role`/`RoleBinding` in `rhdh`, `Role`/`RoleBinding` in `gitlab-system`, `Role`/`RoleBinding` in `openshift-gitops`, and `Job` |
+| `rhdh-secrets-init-job.sh` | Shell script (mounted via ConfigMap); idempotency check, API calls, Secret creation |
 | `kustomization.yaml` | `configMapGenerator` entry to bundle the script with `disableNameSuffixHash: true` |
+
+> **Note:** The job was originally named `rhdh-gitlab-token-job`; it was renamed to
+> `rhdh-secrets-init-job` when its scope expanded to also provision `ARGOCD_TOKEN`.
+> See [ADR-0028](0028-argocd-local-user-and-rhdh-proxy.md).
 
 The Job script:
 1. Exits cleanly if `rhdh-secrets` already exists (idempotency)
@@ -65,8 +69,9 @@ Two pairs of `Role` + `RoleBinding` are declared in `rhdh-gitlab-token-job.yaml`
 
 | Namespace | Access granted |
 |-----------|----------------|
-| `rhdh` | `get`/`create` on `secrets`; `get` on `jobs` |
-| `gitlab-system` | `get` on `gitlab-initial-root-password` secret and `cluster-config` configmap |
+| `rhdh` | `get`/`create`/`patch` on `secrets`; `get` on `jobs` |
+| `gitlab-system` | `get` on `gitlab-initial-root-password` secret |
+| `openshift-gitops` | `get` on `rhdh-local-user` secret (ArgoCD local-user token) |
 
 Both resources are owned by the `developer-hub` Argo CD Application.
 The Argo CD application controller service account has cluster-scoped permissions and

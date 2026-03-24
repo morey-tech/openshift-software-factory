@@ -254,6 +254,36 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
     4. `publish:gitlab` → push GitOps repo to `software-factory/apps/${{ parameters.name }}-gitops`
     5. `catalog:register` → register `catalog-info.yaml` from source repo
 
+#### 5.7.1 — ARGOCD_TOKEN in rhdh-secrets (local ArgoCD user)
+*Depends on 5.7 (ArgoCD proxy and template step require the token). Prerequisite for the `createArgoApp` scaffolder step and the ArgoCD plugin to function.*
+- [x] Add `localUsers` to `components/openshift-gitops/instance/manifests/argocd.yaml`
+  - Local user `rhdh` with `apiKey: true`, `tokenLifetime: "0"` (non-expiring)
+  - The ArgoCD operator stores the current token in a Secret named `rhdh-local-user` in `openshift-gitops`
+  - RBAC policy entries grant the `rhdh` user `get`/`create`/`sync` on applications and `get` on projects
+- [x] Rename job from `rhdh-gitlab-token-job` → `rhdh-secrets-init-job` (function has expanded beyond GitLab)
+  - Files renamed: `rhdh-secrets-init-job.yaml`, `rhdh-secrets-init-job.sh`
+  - All Kubernetes resource names updated to `job-rhdh-secrets-init`
+- [x] Extend `components/developer-hub/instance/manifests/rhdh-secrets-init-job.yaml`
+  - Add `Role` + `RoleBinding` in `openshift-gitops` granting the job ServiceAccount `get` on `rhdh-local-user` Secret
+  - Add `patch` verb to the `rhdh` namespace Role (needed for the patch-missing-fields idempotency path)
+- [x] Extend `components/developer-hub/instance/manifests/rhdh-secrets-init-job.sh`
+  - Read `ARGOCD_TOKEN` from the `rhdh-local-user` Secret in `openshift-gitops`
+  - Write `ARGOCD_TOKEN` into `rhdh-secrets` alongside the existing keys
+  - Update idempotency check to include `ARGOCD_TOKEN`; treat it as a stable/patchable field (not regenerated)
+- [ ] Configure the ArgoCD Backstage proxy in `components/developer-hub/instance/manifests/app-config-rhdh.yaml`
+  - Add proxy route `/argocd/api` → ArgoCD server in-cluster URL
+  - Inject `ARGOCD_TOKEN` from `rhdh-secrets` into the proxy `Cookie` header
+  - See [ADR-0028](decisions/0028-argocd-local-user-and-rhdh-proxy.md)
+
+#### 5.7.2 — Update gitlab-group-init-job catalog seed URL
+*Depends on 5.7 (catalog-info.yaml authored). The init job currently seeds a Location pointing to the GitHub raw URL; for on-cluster use it should point to the GitLab-hosted copy.*
+- [ ] Update `components/gitlab/instance/manifests/gitlab-group-init-job.sh`
+  - Replace the hardcoded `raw.githubusercontent.com` target in the seeded `catalog-info.yaml` with the on-cluster GitLab URL:
+    ```
+    https://gitlab.${APPS_DOMAIN}/software-factory/platform/software-factory-catalog/-/raw/main/catalog-info.yaml
+    ```
+  - The `APPS_DOMAIN` is already discovered by the script from the cluster ingress config
+
 #### 5.8 — RHDH Catalog Location
 *Depends on 5.0 (GitLab `platform/software-factory-catalog` repo must exist) and 5.7 (catalog-info.yaml authored).*
 - [ ] Modify `components/developer-hub/instance/manifests/app-config-rhdh.yaml`

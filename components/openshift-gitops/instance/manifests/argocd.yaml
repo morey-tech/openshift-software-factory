@@ -72,12 +72,25 @@ spec:
       enabled: false
     route:
       enabled: false
+  # Local user for RHDH integration (ArgoCD plugin + scaffolder).
+  # The operator stores the token in a Secret named rhdh-local-user in the
+  # openshift-gitops namespace; the rhdh-secrets-init job reads that Secret
+  # and writes it to rhdh-secrets.
+  localUsers:
+    - name: rhdh
+      apiKey: true
+      tokenLifetime: "0"  # non-expiring
+
   # See docs/decisions/0006-cluster-admins-group-for-argocd-rbac.md
   rbac:
     defaultPolicy: ""
     policy: |
       g, cluster-admins, role:admin
       p, role:admin, exec, create, */*, allow
+      p, rhdh, applications, get, */*, allow
+      p, rhdh, applications, create, */*, allow
+      p, rhdh, applications, sync, */*, allow
+      p, rhdh, projects, get, */*, allow
     scopes: '[groups]'
   redis:
     resources:

@@ -1,23 +1,31 @@
 #!/usr/bin/env bash
-# Generates a GitLab personal access token for the root user and stores it
-# (along with a random BACKEND_SECRET) in the rhdh-secrets Secret in the
-# rhdh namespace.
+# Populates the rhdh-secrets Secret with all credentials RHDH needs at startup:
+#   GITLAB_TOKEN   — GitLab root PAT (read_api, read/write_repository)
+#   BACKEND_SECRET — random secret for the RHDH backend
+#   APPS_DOMAIN    — cluster wildcard domain (e.g. apps.cluster.example.com)
+#   ARGOCD_TOKEN   — API token for the ArgoCD local user 'rhdh'
+#
+# The ArgoCD token is read from the Secret that the ArgoCD operator auto-generates
+# when localUsers[].autoRenewToken is true (Secret: argocd-rhdh-token in openshift-gitops).
 #
 # Follows the Job-generated secret pattern from ADR-0018.
 set -euo pipefail
 
 SECRET_NAME="rhdh-secrets"
 SECRET_NAMESPACE="rhdh"
-JOB_NAME="job-rhdh-gitlab-token"
+JOB_NAME="job-rhdh-secrets-init"
 JOB_NAMESPACE="rhdh"
 GITLAB_SECRET_NAME="gitlab-initial-root-password"
 GITLAB_SECRET_NAMESPACE="gitlab-system"
+ARGOCD_TOKEN_SECRET_NAME="rhdh-local-user"
+ARGOCD_TOKEN_SECRET_NAMESPACE="openshift-gitops"
 
 echo "Checking if ${SECRET_NAME} already exists..."
 if oc get secret "${SECRET_NAME}" -n "${SECRET_NAMESPACE}" &>/dev/null; then
   # Check which required fields are present.
   # GITLAB_TOKEN and BACKEND_SECRET are generated (rotating them would break existing sessions)
-  # so they are never overwritten. APPS_DOMAIN is stable and safe to patch in if missing.
+  # so they are never overwritten. APPS_DOMAIN and ARGOCD_TOKEN are stable and safe to patch
+  # in if missing.
   _field_value() {
     oc get secret "${SECRET_NAME}" -n "${SECRET_NAMESPACE}" \
       -o jsonpath="{.data.$1}" 2>/dev/null | base64 -d 2>/dev/null || true
@@ -26,21 +34,39 @@ if oc get secret "${SECRET_NAME}" -n "${SECRET_NAMESPACE}" &>/dev/null; then
   HAS_TOKEN=$(_field_value GITLAB_TOKEN)
   HAS_SECRET=$(_field_value BACKEND_SECRET)
   HAS_DOMAIN=$(_field_value APPS_DOMAIN)
+  HAS_ARGOCD=$(_field_value ARGOCD_TOKEN)
 
-  if [[ -n "${HAS_TOKEN}" && -n "${HAS_SECRET}" && -n "${HAS_DOMAIN}" ]]; then
+  if [[ -n "${HAS_TOKEN}" && -n "${HAS_SECRET}" && -n "${HAS_DOMAIN}" && -n "${HAS_ARGOCD}" ]]; then
     echo "Secret ${SECRET_NAME} already has all required fields, nothing to do."
     exit 0
   fi
 
-  if [[ -n "${HAS_TOKEN}" && -n "${HAS_SECRET}" && -z "${HAS_DOMAIN}" ]]; then
-    # Secret was created before APPS_DOMAIN was added — patch it in without touching
-    # the generated fields.
-    echo "Secret ${SECRET_NAME} exists but is missing APPS_DOMAIN — patching..."
-    APPS_DOMAIN=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')
+  if [[ -n "${HAS_TOKEN}" && -n "${HAS_SECRET}" ]]; then
+    # Generated fields are present; patch in any missing stable fields without
+    # touching GITLAB_TOKEN or BACKEND_SECRET.
+    PATCH_DATA="{}"
+    if [[ -z "${HAS_DOMAIN}" ]]; then
+      echo "Patching missing APPS_DOMAIN..."
+      APPS_DOMAIN=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')
+      PATCH_DATA=$(echo "${PATCH_DATA}" | \
+        python3 -c "import sys,json; d=json.load(sys.stdin); d.setdefault('stringData',{})['APPS_DOMAIN']='${APPS_DOMAIN}'; print(json.dumps(d))")
+    fi
+    if [[ -z "${HAS_ARGOCD}" ]]; then
+      echo "Patching missing ARGOCD_TOKEN..."
+      ARGOCD_TOKEN=$(oc get secret "${ARGOCD_TOKEN_SECRET_NAME}" \
+        -n "${ARGOCD_TOKEN_SECRET_NAMESPACE}" \
+        -o jsonpath='{.data.token}' | base64 -d)
+      if [[ -z "${ARGOCD_TOKEN}" ]]; then
+        echo "ERROR: ArgoCD token Secret '${ARGOCD_TOKEN_SECRET_NAME}' not found or empty"
+        exit 1
+      fi
+      PATCH_DATA=$(echo "${PATCH_DATA}" | \
+        python3 -c "import sys,json; d=json.load(sys.stdin); d.setdefault('stringData',{})['ARGOCD_TOKEN']='${ARGOCD_TOKEN}'; print(json.dumps(d))")
+    fi
     oc patch secret "${SECRET_NAME}" -n "${SECRET_NAMESPACE}" \
       --type=merge \
-      --patch "{\"stringData\":{\"APPS_DOMAIN\":\"${APPS_DOMAIN}\"}}"
-    echo "Patched APPS_DOMAIN='${APPS_DOMAIN}' into ${SECRET_NAME}."
+      --patch "${PATCH_DATA}"
+    echo "Patched ${SECRET_NAME} with missing fields."
     exit 0
   fi
 
@@ -98,6 +124,16 @@ if [[ -z "${GITLAB_TOKEN}" ]]; then
 fi
 echo "GitLab token created successfully."
 
+echo "Reading ArgoCD local-user token for 'rhdh'..."
+ARGOCD_TOKEN=$(oc get secret "${ARGOCD_TOKEN_SECRET_NAME}" \
+  -n "${ARGOCD_TOKEN_SECRET_NAMESPACE}" \
+  -o jsonpath='{.data.token}' | base64 -d)
+if [[ -z "${ARGOCD_TOKEN}" ]]; then
+  echo "ERROR: ArgoCD token Secret '${ARGOCD_TOKEN_SECRET_NAME}' not found or empty in ${ARGOCD_TOKEN_SECRET_NAMESPACE}"
+  exit 1
+fi
+echo "ArgoCD token retrieved successfully."
+
 echo "Generating BACKEND_SECRET..."
 BACKEND_SECRET=$(openssl rand -base64 32 | tr -d '\n')
 
@@ -123,6 +159,7 @@ stringData:
   GITLAB_TOKEN: "${GITLAB_TOKEN}"
   BACKEND_SECRET: "${BACKEND_SECRET}"
   APPS_DOMAIN: "${APPS_DOMAIN}"
+  ARGOCD_TOKEN: "${ARGOCD_TOKEN}"
 EOF
 
 echo "Done. The rhdh-secrets Secret has been created in the ${SECRET_NAMESPACE} namespace."

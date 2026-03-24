@@ -238,11 +238,11 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 
 #### 5.7 — Template Catalog-Info & template.yaml
 *Depends on 5.2–5.6 (skeleton content and gitops-skeleton must be defined so template steps can reference them).*
-- [ ] Create `catalog/templates/quarkus-web-template/catalog-info.yaml`
+- [x] Create `catalog/templates/quarkus-web-template/catalog-info.yaml`
   - `kind: Template`, registers with RHDH
   - Points to `template.yaml` in the same directory
   - This file is also pushed to `software-factory/platform/software-factory-catalog` by the 5.0 job so RHDH's gitlabOrg discovery picks it up automatically
-- [ ] Create `catalog/templates/quarkus-web-template/template.yaml`
+- [x] Create `catalog/templates/quarkus-web-template/template.yaml`
   - User inputs: `name`, `description`, `owner`, `system`, `quayNamespace`
   - Source repo destination: `software-factory/apps/${{ parameters.name }}` (group fixed; no user input)
   - GitOps repo destination: `software-factory/apps/${{ parameters.name }}-gitops`

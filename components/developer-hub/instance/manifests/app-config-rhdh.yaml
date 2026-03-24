@@ -98,3 +98,24 @@ data:
             - name: software-factory-argocd
               url: https://software-factory-argocd-server-openshift-gitops.${APPS_DOMAIN}
               token: ${ARGOCD_TOKEN}
+
+    # Proxy configuration.
+    # The ArgoCD proxy allows the golden path template to create ArgoCD Applications
+    # via http:backstage:request without exposing ARGOCD_TOKEN to the browser.
+    proxy:
+      endpoints:
+        /argocd:
+          target: https://software-factory-argocd-server-openshift-gitops.${APPS_DOMAIN}
+          headers:
+            Authorization: Bearer ${ARGOCD_TOKEN}
+          changeOrigin: true
+          secure: false
+
+    # Scaffolder globals injected into every template step via ${{ globals.X }}.
+    # Derived from env vars already available in the rhdh-secrets Secret so no
+    # user input is needed for cluster-specific host values.
+    scaffolder:
+      additionalTemplateGlobals:
+        gitlabHost: gitlab.${APPS_DOMAIN}
+        devspacesHost: devspaces.${APPS_DOMAIN}
+        argocdUrl: https://software-factory-argocd-server-openshift-gitops.${APPS_DOMAIN}

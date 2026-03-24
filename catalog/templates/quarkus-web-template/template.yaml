@@ -1,0 +1,167 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: quarkus-web-template
+  title: Quarkus Web Application
+  description: >-
+    Scaffold a Quarkus reactive web application with a Tekton build pipeline,
+    ArgoCD GitOps deployment, and a Dev Spaces workspace.
+  tags:
+    - quarkus
+    - java
+    - recommended
+spec:
+  owner: group:platform-engineering
+  type: service
+
+  parameters:
+    - title: Application Details
+      required: [name, description, owner, system]
+      properties:
+        name:
+          title: Name
+          type: string
+          description: >-
+            Unique name for your app — becomes the GitLab repo name and
+            Kubernetes resource name (lowercase, hyphens only)
+          ui:autofocus: true
+          ui:field: EntityNamePicker
+        description:
+          title: Description
+          type: string
+          description: Short description of the application
+        owner:
+          title: Owner
+          type: string
+          description: "Backstage owner (e.g. user:guest or group:platform-engineering)"
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              kind: [User, Group]
+            allowArbitraryValues: true
+        system:
+          title: System
+          type: string
+          description: Backstage System this component belongs to
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              kind: System
+            allowArbitraryValues: true
+
+    - title: Container Registry
+      required: [quayNamespace]
+      properties:
+        quayNamespace:
+          title: Quay Registry + Namespace
+          type: string
+          description: >-
+            Full registry host and organization path for the built image
+            (e.g. registry-quay-quay-operator.apps.cluster.example.com/quayadmin)
+
+  steps:
+    # Step 1 — render the application source skeleton with all template variables
+    # computed up-front from parameters and scaffolder globals (injected from APPS_DOMAIN
+    # via additionalTemplateGlobals in app-config-rhdh.yaml).
+    - id: fetchSource
+      name: Fetch Application Skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          system: ${{ parameters.system }}
+          quayNamespace: ${{ parameters.quayNamespace }}
+          repoUrl: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}
+          gitopsRepoUrl: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}-gitops
+          devspacesUrl: https://${{ globals.devspacesHost }}/#https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}
+
+    # Step 2 — publish the rendered source to the software-factory/apps subgroup on GitLab.
+    # The publish:gitlab action matches the integrations.gitlab entry for globals.gitlabHost
+    # and uses its configured token automatically.
+    - id: publishSource
+      name: Publish Application Repository
+      action: publish:gitlab
+      input:
+        repoUrl: ${{ globals.gitlabHost }}?owner=software-factory%2Fapps&repo=${{ parameters.name }}
+        description: ${{ parameters.description }}
+        defaultBranch: main
+        gitCommitMessage: "feat: initial scaffold from golden path template"
+
+    # Step 3 — render the GitOps skeleton into a separate subdirectory to avoid
+    # path collisions with the source skeleton already in the workspace root.
+    - id: fetchGitops
+      name: Fetch GitOps Skeleton
+      action: fetch:template
+      input:
+        url: ./gitops-skeleton
+        targetPath: gitops
+        values:
+          name: ${{ parameters.name }}
+          quayNamespace: ${{ parameters.quayNamespace }}
+          gitopsRepoUrl: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}-gitops
+
+    # Step 4 — publish only the gitops/ subdirectory to the -gitops repo.
+    - id: publishGitops
+      name: Publish GitOps Repository
+      action: publish:gitlab
+      input:
+        repoUrl: ${{ globals.gitlabHost }}?owner=software-factory%2Fapps&repo=${{ parameters.name }}-gitops
+        description: "GitOps manifests for ${{ parameters.name }}"
+        defaultBranch: main
+        sourcePath: gitops
+        gitCommitMessage: "feat: initial gitops scaffold"
+
+    # Step 5 — create the ArgoCD Application in openshift-gitops via the Backstage proxy.
+    # The proxy injects Authorization: Bearer ${ARGOCD_TOKEN} so the token is never
+    # exposed to the browser. See proxy.endpoints./argocd in app-config-rhdh.yaml.
+    - id: createArgoApp
+      name: Create ArgoCD Application
+      action: http:backstage:request
+      input:
+        method: POST
+        path: /api/proxy/argocd/api/v1/applications
+        headers:
+          Content-Type: application/json
+        body:
+          metadata:
+            name: ${{ parameters.name }}-dev
+            namespace: openshift-gitops
+          spec:
+            project: apps
+            source:
+              repoURL: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}-gitops
+              targetRevision: main
+              path: overlays/dev
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: ${{ parameters.name }}-dev
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+              syncOptions:
+                - CreateNamespace=true
+
+    # Step 6 — register the scaffolded app's catalog-info.yaml in RHDH so it appears
+    # immediately in the software catalog without waiting for the next gitlabOrg sync.
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publishSource.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Source Repository
+        url: ${{ steps.publishSource.output.remoteUrl }}
+        icon: gitlab
+      - title: GitOps Repository
+        url: ${{ steps.publishGitops.output.remoteUrl }}
+        icon: gitlab
+      - title: Open in Catalog
+        url: ${{ steps.register.output.entityRef }}
+        icon: catalog

@@ -1,0 +1,8 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: quarkus-web-template
+  description: Golden path template for Quarkus web applications
+spec:
+  targets:
+    - ./template.yaml

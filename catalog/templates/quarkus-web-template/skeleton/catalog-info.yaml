@@ -1,0 +1,30 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.name }}
+  description: ${{ values.description }}
+  annotations:
+    # ArgoCD plugin — references the Application deployed by the GitOps skeleton
+    argocd/app-name: ${{ values.name }}-dev
+    argocd/instance-name: software-factory-argocd
+
+    # Kubernetes / Topology / Tekton plugins — match on label app.kubernetes.io/name
+    backstage.io/kubernetes-id: ${{ values.name }}
+    backstage.io/kubernetes-namespace: ${{ values.name }}-dev
+
+    # Tekton plugin — show PipelineRuns for this component's namespace
+    tekton.dev/cicd: "true"
+
+    # Source location — used by the "View Source" link in RHDH
+    backstage.io/source-location: url:${{ values.repoUrl }}
+
+  links:
+    - title: Open in Dev Spaces
+      url: ${{ values.devspacesUrl }}
+      icon: web
+
+spec:
+  type: service
+  lifecycle: experimental
+  owner: ${{ values.owner }}
+  system: ${{ values.system }}

@@ -222,7 +222,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 
 #### 5.5 — App Catalog Metadata Skeleton
 *No dependencies.*
-- [ ] Create `catalog/templates/quarkus-web-template/skeleton/catalog-info.yaml`
+- [x] Create `catalog/templates/quarkus-web-template/skeleton/catalog-info.yaml`
   - `kind: Component`, `type: service`, `lifecycle: experimental`
   - Backstage template variables: `${{ values.name }}`, `${{ values.owner }}`, `${{ values.system }}`
   - Annotations: ArgoCD app link, Tekton pipeline link, GitLab source URL, Dev Spaces workspace URL

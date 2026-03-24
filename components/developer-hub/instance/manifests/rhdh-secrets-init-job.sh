@@ -127,7 +127,7 @@ echo "GitLab token created successfully."
 echo "Reading ArgoCD local-user token for 'rhdh'..."
 ARGOCD_TOKEN=$(oc get secret "${ARGOCD_TOKEN_SECRET_NAME}" \
   -n "${ARGOCD_TOKEN_SECRET_NAMESPACE}" \
-  -o jsonpath='{.data.token}' | base64 -d)
+  -o jsonpath='{.data.apiToken}' | base64 -d)
 if [[ -z "${ARGOCD_TOKEN}" ]]; then
   echo "ERROR: ArgoCD token Secret '${ARGOCD_TOKEN_SECRET_NAME}' not found or empty in ${ARGOCD_TOKEN_SECRET_NAMESPACE}"
   exit 1

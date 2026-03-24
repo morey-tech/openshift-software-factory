@@ -1,0 +1,57 @@
+schemaVersion: 2.2.0
+metadata:
+  name: ${{ values.name }}
+  description: ${{ values.description }}
+  language: Java
+  projectType: Quarkus
+
+projects:
+  - name: ${{ values.name }}
+    git:
+      remotes:
+        origin: ${{ values.repoUrl }}
+
+components:
+  - name: m2-repository
+    volume:
+      size: 3Gi
+
+  - name: tools
+    container:
+      image: quay.io/devfile/universal-developer-image:ubi9-latest
+      memoryLimit: 4Gi
+      mountSources: true
+      volumeMounts:
+        - name: m2-repository
+          path: /home/user/.m2
+      endpoints:
+        - name: http-8080
+          targetPort: 8080
+          exposure: public
+          protocol: https
+        - name: debug
+          targetPort: 5005
+          exposure: none
+
+commands:
+  - id: dev
+    exec:
+      label: "Start Quarkus dev mode (hot reload)"
+      component: tools
+      commandLine: mvn quarkus:dev
+      workingDir: ${PROJECT_SOURCE}
+      hotReloadCapable: true
+
+  - id: build
+    exec:
+      label: "Build"
+      component: tools
+      commandLine: mvn package -DskipTests --no-transfer-progress
+      workingDir: ${PROJECT_SOURCE}
+
+  - id: debug
+    exec:
+      label: "Start Quarkus dev mode (debug)"
+      component: tools
+      commandLine: mvn quarkus:dev -Ddebug
+      workingDir: ${PROJECT_SOURCE}

@@ -278,12 +278,10 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 
 #### 5.7.2 — Update gitlab-group-init-job catalog seed URL
 *Depends on 5.7 (catalog-info.yaml authored). The init job currently seeds a Location pointing to the GitHub raw URL; for on-cluster use it should point to the GitLab-hosted copy.*
-- [ ] Update `components/gitlab/instance/manifests/gitlab-group-init-job.sh`
-  - Replace the hardcoded `raw.githubusercontent.com` target in the seeded `catalog-info.yaml` with the on-cluster GitLab URL:
-    ```
-    https://gitlab.${APPS_DOMAIN}/software-factory/platform/software-factory-catalog/-/raw/main/catalog-info.yaml
-    ```
-  - The `APPS_DOMAIN` is already discovered by the script from the cluster ingress config
+- [x] Update `components/gitlab/instance/manifests/gitlab-group-init-job.sh`
+  - Replace the wrapper Location (pointing to GitHub) with the actual template `catalog-info.yaml` content (`kind: Location, targets: [./template.yaml]`)
+  - Also seed `template.yaml` into `software-factory-catalog` so the relative `./template.yaml` reference resolves to the on-cluster GitLab URL automatically — no GitHub dependency
+  - Both files are inlined as single-quoted heredocs so `${{...}}` template syntax passes through verbatim
 
 #### 5.8 — RHDH Catalog Location
 *Depends on 5.0 (GitLab `platform/software-factory-catalog` repo must exist) and 5.7 (catalog-info.yaml authored).*

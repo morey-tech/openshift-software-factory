@@ -24,7 +24,7 @@ spec:
     - kind: mirror
       managed: false          # Not needed — images are pushed by pipelines, not mirrored
     - kind: monitoring
-      managed: true
+      managed: false          # Requires AllNamespaces install mode; operator is OwnNamespace
     - kind: objectstorage     # Provisions an ObjectBucketClaim via NooBaa/ODF
       managed: true
     - kind: tls

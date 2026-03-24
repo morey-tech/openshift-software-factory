@@ -285,7 +285,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 
 #### 5.8 — RHDH Catalog Location
 *Depends on 5.0 (GitLab `platform/software-factory-catalog` repo must exist) and 5.7 (catalog-info.yaml authored).*
-- [ ] Modify `components/developer-hub/instance/manifests/app-config-rhdh.yaml`
+- [x] Modify `components/developer-hub/instance/manifests/app-config-rhdh.yaml`
   - Populate `catalog.locations` with a static entry pointing to the GitLab catalog repo:
     ```yaml
     - type: url

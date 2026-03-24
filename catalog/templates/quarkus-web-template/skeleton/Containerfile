@@ -1,0 +1,25 @@
+# Stage 1 — build
+FROM registry.access.redhat.com/ubi9/openjdk-21:latest AS builder
+
+USER root
+WORKDIR /build
+
+COPY pom.xml .
+COPY src ./src
+
+RUN mvn package -DskipTests --no-transfer-progress
+
+# Stage 2 — runtime
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
+
+WORKDIR /deployments
+
+# Full Quarkus fast-jar layout — all 4 paths are required at runtime
+COPY --from=builder /build/target/quarkus-app/lib/            ./lib/
+COPY --from=builder /build/target/quarkus-app/quarkus-run.jar ./quarkus-run.jar
+COPY --from=builder /build/target/quarkus-app/app/            ./app/
+COPY --from=builder /build/target/quarkus-app/quarkus/        ./quarkus/
+
+EXPOSE 8080
+
+CMD ["java", "-jar", "/deployments/quarkus-run.jar"]

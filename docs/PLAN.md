@@ -198,7 +198,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 
 #### 5.2 — App Source Skeleton
 *No dependencies — can be implemented in parallel with 5.1.*
-- [ ] Create `catalog/templates/quarkus-web-template/skeleton/` source files:
+- [x] Create `catalog/templates/quarkus-web-template/skeleton/` source files:
   - `pom.xml` — Quarkus BOM, `quarkus-resteasy-reactive` starter dependency
   - `src/main/java/.../GreetingResource.java` — minimal REST endpoint
   - `src/main/resources/application.properties` — Quarkus config (port, health endpoint)
@@ -208,7 +208,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 #### 5.3 — App Dev Spaces Devfile
 *No dependencies — can be implemented in parallel with 5.1 and 5.2.*
 - [ ] Create `catalog/templates/quarkus-web-template/skeleton/devfile.yaml`
-  - Base image: `registry.access.redhat.com/ubi9/openjdk-21` (or Red Hat Dev Spaces UDI)
+  - Base image: Red Hat Dev Spaces UDI see devfile.yaml
   - Components: main dev container + volume mount for Maven cache
   - Commands: `mvn quarkus:dev` for hot-reload, `mvn package` for build
   - Git remote pre-wired via template variable `${{ values.repoUrl }}`

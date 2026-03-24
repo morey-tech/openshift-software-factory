@@ -1,6 +1,9 @@
 # Backstage app-config for Red Hat Developer Hub.
-# Environment variables injected from the rhdh-gitlab-token Secret:
-#   GITLAB_TOKEN — GitLab personal/group access token
+# Environment variables injected from rhdh-secrets:
+#   GITLAB_TOKEN   — GitLab personal access token
+#   BACKEND_SECRET — random backend signing secret
+#   APPS_DOMAIN    — cluster wildcard domain
+#   ARGOCD_TOKEN   — ArgoCD local-user API token (non-expiring, user: rhdh)
 #
 # The RHDH operator injects RHDH_ROUTE_HOST automatically from the created Route.
 # Reference: https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.9
@@ -39,8 +42,8 @@ data:
     signInPage: guest
 
     # Self-hosted GitLab integration.
-    # GITLAB_TOKEN and APPS_DOMAIN are injected from the rhdh-secrets Secret
-    # by job-rhdh-gitlab-token, which discovers APPS_DOMAIN from the cluster
+    # GITLAB_TOKEN and APPS_DOMAIN are injected from rhdh-secrets by
+    # job-rhdh-secrets-init, which discovers APPS_DOMAIN from the cluster
     # ingress config at deploy time.
     integrations:
       gitlab:
@@ -91,25 +94,31 @@ data:
               serviceAccountToken: ${K8S_SERVICE_ACCOUNT_TOKEN}
 
     # ArgoCD plugin configuration.
+    # Uses the in-cluster service URL — the backend plugin calls ArgoCD server-side
+    # so there is no need to traverse the ingress.
     argocd:
       appLocatorMethods:
         - type: config
           instances:
             - name: software-factory-argocd
-              url: https://software-factory-argocd-server-openshift-gitops.${APPS_DOMAIN}
+              url: https://software-factory-argocd-server.openshift-gitops.svc
               token: ${ARGOCD_TOKEN}
 
     # Proxy configuration.
-    # The ArgoCD proxy allows the golden path template to create ArgoCD Applications
-    # via http:backstage:request without exposing ARGOCD_TOKEN to the browser.
+    # Routes /argocd/api through the Backstage backend to the ArgoCD API so that
+    # ARGOCD_TOKEN is never exposed to the browser.
+    # Path rewrite strips the /api/proxy/argocd/api prefix added by the Backstage
+    # proxy middleware before forwarding to the ArgoCD /api/v1 tree.
     proxy:
       endpoints:
-        /argocd:
-          target: https://software-factory-argocd-server-openshift-gitops.${APPS_DOMAIN}
-          headers:
-            Authorization: Bearer ${ARGOCD_TOKEN}
+        /argocd/api:
+          target: https://software-factory-argocd-server.openshift-gitops.svc/api/v1
           changeOrigin: true
           secure: false
+          pathRewrite:
+            '^/api/proxy/argocd/api': '/api/v1'
+          headers:
+            Cookie: 'argocd.token=${ARGOCD_TOKEN}'
 
     # Scaffolder globals injected into every template step via ${{ globals.X }}.
     # Derived from env vars already available in the rhdh-secrets Secret so no

@@ -270,9 +270,10 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
   - Read `ARGOCD_TOKEN` from the `rhdh-local-user` Secret in `openshift-gitops`
   - Write `ARGOCD_TOKEN` into `rhdh-secrets` alongside the existing keys
   - Update idempotency check to include `ARGOCD_TOKEN`; treat it as a stable/patchable field (not regenerated)
-- [ ] Configure the ArgoCD Backstage proxy in `components/developer-hub/instance/manifests/app-config-rhdh.yaml`
-  - Add proxy route `/argocd/api` → ArgoCD server in-cluster URL
-  - Inject `ARGOCD_TOKEN` from `rhdh-secrets` into the proxy `Cookie` header
+- [x] Configure the ArgoCD Backstage proxy in `components/developer-hub/instance/manifests/app-config-rhdh.yaml`
+  - Proxy route `/argocd/api` → ArgoCD server in-cluster SVC URL with path rewrite to `/api/v1`
+  - `Cookie: argocd.token=${ARGOCD_TOKEN}` header keeps the token server-side
+  - `argocd.appLocatorMethods` also uses the in-cluster SVC URL (server-to-server, no ingress needed)
   - See [ADR-0028](decisions/0028-argocd-local-user-and-rhdh-proxy.md)
 
 #### 5.7.2 — Update gitlab-group-init-job catalog seed URL

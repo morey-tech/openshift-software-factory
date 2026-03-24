@@ -16,7 +16,7 @@ spec:
     dynamicPluginsConfigMapName: dynamic-plugins-rhdh
     extraEnvs:
       secrets:
-        # Injects GITLAB_TOKEN and BACKEND_SECRET into the Backstage pod.
+        # Injects GITLAB_TOKEN, BACKEND_SECRET, APPS_DOMAIN, and ARGOCD_TOKEN into the Backstage pod.
         - name: rhdh-secrets
     route:
       enabled: true

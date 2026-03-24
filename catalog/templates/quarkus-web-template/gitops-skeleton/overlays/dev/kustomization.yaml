@@ -5,5 +5,5 @@ resources:
   - ../../base
 images:
   - name: PLACEHOLDER
-    newName: ${{ values.quayNamespace }}/${{ values.name }}
+    newName: ${{ values.quayHost }}/quayadmin/${{ values.name }}
     newTag: latest

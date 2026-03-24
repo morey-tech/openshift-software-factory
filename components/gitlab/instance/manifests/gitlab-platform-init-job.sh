@@ -204,16 +204,6 @@ spec:
               kind: System
             allowArbitraryValues: true
 
-    - title: Container Registry
-      required: [quayNamespace]
-      properties:
-        quayNamespace:
-          title: Quay Registry + Namespace
-          type: string
-          description: >-
-            Full registry host and organization path for the built image
-            (e.g. registry-quay-quay-operator.apps.cluster.example.com/quayadmin)
-
   steps:
     - id: fetchSource
       name: Fetch Application Skeleton
@@ -225,7 +215,7 @@ spec:
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
           system: ${{ parameters.system }}
-          quayNamespace: ${{ parameters.quayNamespace }}
+          quayHost: ${{ globals.quayHost }}
           repoUrl: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}
           gitopsRepoUrl: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}-gitops
           devspacesUrl: https://${{ globals.devspacesHost }}/#https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}
@@ -247,7 +237,7 @@ spec:
         targetPath: gitops
         values:
           name: ${{ parameters.name }}
-          quayNamespace: ${{ parameters.quayNamespace }}
+          quayHost: ${{ globals.quayHost }}
           gitopsRepoUrl: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}-gitops
 
     - id: publishGitops

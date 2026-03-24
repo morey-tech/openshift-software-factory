@@ -127,7 +127,7 @@ This is the critical path — everything else depends on Argo CD being up and ru
 Each operator just needs a Subscription and OperatorGroup in the appropriate namespace.
 
 - [x] **OpenShift Pipelines** (`components/openshift-pipelines/operator/`)
-- [x] **Quoay** (`components/quay/operator/`)
+- [x] **Quay** (`components/quay/operator/`)
 - [x] **Developer Hub** (`components/developer-hub/operator/`)
 - [x] **Dev Spaces** (`components/dev-spaces/operator/`)
 
@@ -217,7 +217,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 *Depends on 5.1 (pipeline name `build-and-push` must be known).*
 - [x] Create `catalog/templates/quarkus-web-template/skeleton/.tekton/pipelinerun.yaml`
   - References the cluster `Pipeline` `build-and-push` by name
-  - Params: image name (`quay.io/${{ values.quayNamespace }}/${{ values.name }}`), GitOps repo URL
+  - Params: image name (`${{ values.quayHost }}/quayadmin/${{ values.name }}`), GitOps repo URL
   - Workspace references: PVC for source, secret refs for Quay and GitLab credentials
 
 #### 5.5 — App Catalog Metadata Skeleton
@@ -243,7 +243,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
   - Points to `template.yaml` in the same directory
   - This file is also pushed to `software-factory/platform/software-factory-catalog` by the 5.0 job so RHDH's gitlabOrg discovery picks it up automatically
 - [x] Create `catalog/templates/quarkus-web-template/template.yaml`
-  - User inputs: `name`, `description`, `owner`, `system`, `quayNamespace`
+  - User inputs: `name`, `description`, `owner`, `system` (Quay registry auto-populated from `globals.quayHost`)
   - Source repo destination: `software-factory/apps/${{ parameters.name }}` (group fixed; no user input)
   - GitOps repo destination: `software-factory/apps/${{ parameters.name }}-gitops`
   - GitLab host: `${GITLAB_HOST}` env var injected from `rhdh-secrets` — no user input required

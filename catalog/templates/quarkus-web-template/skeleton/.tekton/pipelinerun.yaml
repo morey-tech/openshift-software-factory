@@ -16,7 +16,7 @@ spec:
     - name: source-repo-url
       value: ${{ values.repoUrl }}
     - name: image
-      value: ${{ values.quayNamespace }}/${{ values.name }}
+      value: ${{ values.quayHost }}/quayadmin/${{ values.name }}
     - name: gitops-repo-url
       value: ${{ values.gitopsRepoUrl }}
   workspaces:

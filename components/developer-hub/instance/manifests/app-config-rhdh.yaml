@@ -132,3 +132,4 @@ data:
         gitlabHost: gitlab.${APPS_DOMAIN}
         devspacesHost: devspaces.${APPS_DOMAIN}
         argocdUrl: https://software-factory-argocd-server-openshift-gitops.${APPS_DOMAIN}
+        quayHost: registry-quay-quay-operator.${APPS_DOMAIN}

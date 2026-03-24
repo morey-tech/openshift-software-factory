@@ -1,0 +1,21 @@
+# AppProject for scaffolded application deployments from the golden path template.
+# Allows sources from the self-hosted GitLab instance (software-factory/apps/* subgroup)
+# but not arbitrary repos. See docs/decisions/0013-appproject-per-appset.md
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: apps
+  namespace: openshift-gitops
+spec:
+  description: Scaffolded application deployments from the golden path template
+  sourceRepos:
+    - https://gitlab.*/software-factory/apps/*
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: '*'
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

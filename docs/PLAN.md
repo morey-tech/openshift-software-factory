@@ -229,7 +229,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 
 #### 5.6 — GitOps Repo Skeleton
 *No dependencies — defines the ArgoCD Application and Kustomize manifests for the scaffolded app.*
-- [ ] Create `catalog/templates/quarkus-web-template/gitops-skeleton/`:
+- [x] Create `catalog/templates/quarkus-web-template/gitops-skeleton/`:
   - `base/deployment.yaml` — Deployment with image placeholder (`image: PLACEHOLDER`)
   - `base/service.yaml` — ClusterIP Service
   - `base/kustomization.yaml` — lists base resources

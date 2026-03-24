@@ -215,7 +215,7 @@ software-factory/          ← top-level group; RHDH gitlabOrg discovery targets
 
 #### 5.4 — App Tekton Skeleton
 *Depends on 5.1 (pipeline name `build-and-push` must be known).*
-- [ ] Create `catalog/templates/quarkus-web-template/skeleton/.tekton/pipelinerun.yaml`
+- [x] Create `catalog/templates/quarkus-web-template/skeleton/.tekton/pipelinerun.yaml`
   - References the cluster `Pipeline` `build-and-push` by name
   - Params: image name (`quay.io/${{ values.quayNamespace }}/${{ values.name }}`), GitOps repo URL
   - Workspace references: PVC for source, secret refs for Quay and GitLab credentials

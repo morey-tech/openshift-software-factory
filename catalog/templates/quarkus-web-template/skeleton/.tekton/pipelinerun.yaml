@@ -1,0 +1,35 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: ${{ values.name }}-build-
+  namespace: ${{ values.name }}-dev
+  labels:
+    app.kubernetes.io/name: ${{ values.name }}
+spec:
+  pipelineRef:
+    resolver: cluster
+    params:
+      - {name: kind,      value: pipeline}
+      - {name: name,      value: build-and-push}
+      - {name: namespace, value: openshift-pipelines}
+  params:
+    - name: source-repo-url
+      value: ${{ values.repoUrl }}
+    - name: image
+      value: ${{ values.quayNamespace }}/${{ values.name }}
+    - name: gitops-repo-url
+      value: ${{ values.gitopsRepoUrl }}
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 1Gi
+    - name: quay-auth
+      secret:
+        secretName: quay-push-secret
+    - name: gitops-credentials
+      secret:
+        secretName: gitlab-credentials

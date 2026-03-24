@@ -1,0 +1,28 @@
+# ClusterRole + ClusterRoleBinding granting all service accounts read access to
+# Pipeline resources cluster-wide. Required so that the `pipeline` SA in each
+# app namespace can resolve the cross-namespace `build-and-push` Pipeline via
+# the Tekton cluster resolver.
+# See docs/decisions/0025-cluster-resolver-for-pipeline-and-task-refs.md
+# See docs/decisions/0027-cluster-resolver-rbac-for-app-namespaces.md
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipeline-cross-namespace-read
+rules:
+  - apiGroups: [tekton.dev]
+    resources: [pipelines]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pipeline-cross-namespace-read
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pipeline-cross-namespace-read
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: system:serviceaccounts

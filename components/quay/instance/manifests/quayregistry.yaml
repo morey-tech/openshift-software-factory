@@ -19,10 +19,9 @@ spec:
     - kind: clair             # Vulnerability scanning — feeds into ACS pipeline gate (Phase 6)
       managed: true
       overrides:
-        replicas: 2           # Default HPA scales to 10; cap at 2 for demo environment
         resources:
           requests:
-            cpu: 100m
+            cpu: 100m         # Low request keeps HPA scale-out conservative vs default 2 cores
             memory: 512Mi
     - kind: clairpostgres
       managed: true

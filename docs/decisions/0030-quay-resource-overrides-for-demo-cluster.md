@@ -49,8 +49,7 @@ The following overrides are applied:
 |-----------|----------|-------|-----------|
 | `quay` | `resources.requests.cpu` | `500m` | Default 2 cores is production-sized; 500m is sufficient for demo pipeline throughput |
 | `quay` | `resources.requests.memory` | `2Gi` | Retain operator default to avoid OOMKill |
-| `clair` | `replicas` | `2` | Cap HPA at 2 replicas; 10 replicas at 2 cores each consumed ~20 cores alone |
-| `clair` | `resources.requests.cpu` | `100m` | Clair scans are background/async; low CPU request is safe for demo load |
+| `clair` | `resources.requests.cpu` | `100m` | Clair scans are background/async; low request keeps HPA scale-out conservative vs the 2-core default that drove 10 replicas |
 | `clair` | `resources.requests.memory` | `512Mi` | Reduced from 2Gi default; sufficient for CVE database and scan queue at low concurrency |
 
 ### Consequences
@@ -84,8 +83,9 @@ number of `clair-app` replicas should not exceed 2.
 
 * Good, because components remain fully managed by the operator
 * Good, because overrides are expressed declaratively in the QuayRegistry CR — GitOps-friendly
-* Good, because replica cap on Clair is enforced without disabling the HPA entirely
+* Good, because reduced Clair CPU request keeps the HPA from scaling aggressively — HPA scales on utilisation relative to the request, so a 100m request produces far more conservative scale-out than the 2-core default
 * Bad, because operator upgrades may change default requests; overrides may need revisiting
+* Bad, because `overrides.replicas` cannot be set when `horizontalpodautoscaler` is managed — replica count is indirectly controlled via the resource request instead
 
 ### Unmanage Clair
 

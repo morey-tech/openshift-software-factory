@@ -53,41 +53,37 @@ in-cluster template is always the version that was built into this deployment.
 
 ### Implementation
 
-The `gitlab-platform-init-job.sh` script is updated to seed two files into
-`software-factory/platform/software-factory-catalog` after creating the project:
+The `gitlab-platform-init-job.sh` script seeds the catalog repo by:
 
-| File | Content |
-|------|---------|
-| `catalog-info.yaml` | `kind: Location` with `targets: [./template.yaml]` — the template's own catalog-info.yaml |
-| `template.yaml` | The full `kind: Template` entity for the Quarkus golden path |
+1. Creating the `software-factory-catalog` project in GitLab **without** `initialize_with_readme` so the repo starts empty.
+2. Shallow-cloning `https://github.com/morey-tech/openshift-software-factory` (this repo) into a temp directory.
+3. Initialising a new local git repo, copying `catalog/templates/quarkus-web-template/` as the root, and pushing a single initial commit.
 
-Both files are inlined in the script as single-quoted heredocs (`<<'EOF'`), which
-preserves the `${{...}}` Backstage template syntax verbatim without shell expansion.
+The files pushed mirror the template directory exactly:
 
-When RHDH processes `software-factory-catalog/catalog-info.yaml`, it resolves
-`./template.yaml` relative to the GitLab raw URL of the catalog-info.yaml:
+| Path in catalog repo | Source in this repo |
+|---|---|
+| `catalog-info.yaml` | `catalog/templates/quarkus-web-template/catalog-info.yaml` |
+| `template.yaml` | `catalog/templates/quarkus-web-template/template.yaml` |
+| `skeleton/` | `catalog/templates/quarkus-web-template/skeleton/` |
+| `gitops-skeleton/` | `catalog/templates/quarkus-web-template/gitops-skeleton/` |
 
-```
-https://gitlab.<APPS_DOMAIN>/software-factory/platform/software-factory-catalog/-/raw/main/template.yaml
-```
+`catalog/templates/quarkus-web-template/` is the single source of truth — no file
+content is duplicated in the script.
 
-No external URL is needed at any point in the chain.
-
-### Keeping template.yaml in sync
-
-The inlined `template.yaml` in the shell script is a copy of
-`catalog/templates/quarkus-web-template/template.yaml`. When the template changes,
-the shell script must be updated in the same commit. This is a maintenance
-trade-off accepted in favour of eliminating the external dependency.
+When RHDH runs `fetch:template` with `url: ./skeleton`, Backstage constructs a
+GitLab archive URL relative to the template's raw URL. Because the skeleton
+directories are now committed to the repo, GitLab returns a valid tar archive
+instead of a 404 HTML page (which was the previous failure mode).
 
 ### Consequences
 
 * Good, because no runtime dependency on GitHub or any public CDN
-* Good, because the template version in RHDH always matches the deployed cluster
-* Good, because one fewer network hop during catalog refresh (Location → Template
-  instead of Location → Location → Template)
-* Bad, because `template.yaml` is duplicated — once in `catalog/templates/` and
-  once inlined in the init job script; they must be kept in sync manually
+* Good, because the template version in RHDH always matches the version in the deployed commit of this repo
+* Good, because one fewer network hop during catalog refresh (Location → Template instead of Location → Location → Template)
+* Good, because `fetch:template` steps resolve successfully — skeleton directories are present in the GitLab repo
+* Good, because `catalog/templates/` is the single source of truth — no duplication in the script
+* Neutral, because the init job performs a shallow clone of this repo at deploy time (one extra network call, but only during bootstrap)
 
 ## Pros and Cons of the Options
 

@@ -112,7 +112,7 @@ CATALOG_RESPONSE=$(curl -skf --max-time 15 \
   -X POST "${GITLAB_URL}/api/v4/projects" \
   -H "Authorization: Bearer ${OAUTH_TOKEN}" \
   -H "Content-Type: application/json" \
-  -d "{\"name\":\"software-factory-catalog\",\"path\":\"software-factory-catalog\",\"namespace_id\":${PLATFORM_ID},\"initialize_with_readme\":true,\"visibility\":\"private\"}")
+  -d "{\"name\":\"software-factory-catalog\",\"path\":\"software-factory-catalog\",\"namespace_id\":${PLATFORM_ID},\"visibility\":\"private\"}")
 CATALOG_ID=$(echo "${CATALOG_RESPONSE}" | grep -o '"id":[0-9]*' | head -1 | cut -d: -f2)
 if [[ -z "${CATALOG_ID}" ]]; then
   echo "ERROR: Failed to create software-factory-catalog project. Response: ${CATALOG_RESPONSE}"
@@ -120,192 +120,35 @@ if [[ -z "${CATALOG_ID}" ]]; then
 fi
 echo "Created software-factory-catalog project (id=${CATALOG_ID})."
 
-# --- Seed catalog-info.yaml ---
-# Backstage Location entity — entry point that RHDH's gitlabOrg provider
-# discovers automatically. The relative ./template.yaml reference resolves to
-# the template.yaml seeded in the same commit below.
-echo "Seeding catalog-info.yaml in software-factory-catalog..."
-CATALOG_CONTENT=$(cat <<'EOF'
-apiVersion: backstage.io/v1alpha1
-kind: Location
-metadata:
-  name: quarkus-web-template
-  description: Golden path template for Quarkus web applications
-spec:
-  targets:
-    - ./template.yaml
-EOF
-)
-# Base64-encode for the GitLab files API (avoids newline/quoting issues
-# when embedding YAML inside a JSON payload).
-CATALOG_CONTENT_B64=$(printf '%s' "${CATALOG_CONTENT}" | base64 | tr -d '\n')
+# --- Seed catalog repository via git ---
+# Clones the platform repo (single source of truth for template files) and
+# pushes catalog/templates/quarkus-web-template/ as the catalog repo root.
+# This avoids duplicating any file content in this script.
+echo "Seeding catalog repository via git..."
+SOURCE_DIR=$(mktemp -d)
+WORK_DIR=$(mktemp -d)
+GITLAB_HOST="${GITLAB_URL#https://}"
 
-curl -skf --max-time 15 \
-  -X POST "${GITLAB_URL}/api/v4/projects/${CATALOG_ID}/repository/files/catalog-info.yaml" \
-  -H "Authorization: Bearer ${OAUTH_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d "{\"branch\":\"main\",\"encoding\":\"base64\",\"content\":\"${CATALOG_CONTENT_B64}\",\"commit_message\":\"Initial catalog-info.yaml\"}" \
-  > /dev/null
+echo "Cloning platform repo to get authoritative template files..."
+git clone --depth=1 https://github.com/morey-tech/openshift-software-factory.git "${SOURCE_DIR}"
 
-# --- Seed template.yaml ---
-# The Backstage Template entity for the Quarkus golden path. Seeded here so
-# the catalog is fully self-contained on-cluster with no GitHub dependency.
-# Single-quoted heredoc preserves ${{...}} template syntax verbatim.
-echo "Seeding template.yaml in software-factory-catalog..."
-TEMPLATE_CONTENT=$(cat <<'EOF'
-apiVersion: scaffolder.backstage.io/v1beta3
-kind: Template
-metadata:
-  name: quarkus-web-template
-  title: Quarkus Web Application
-  description: >-
-    Scaffold a Quarkus reactive web application with a Tekton build pipeline,
-    ArgoCD GitOps deployment, and a Dev Spaces workspace.
-  tags:
-    - quarkus
-    - java
-    - recommended
-spec:
-  owner: group:platform-engineering
-  type: service
+cd "${WORK_DIR}"
+git init -b main
+git config user.email "platform-init@software-factory.local"
+git config user.name "Platform Init Job"
+git remote add origin \
+  "https://oauth2:${OAUTH_TOKEN}@${GITLAB_HOST}/software-factory/platform/software-factory-catalog.git"
 
-  parameters:
-    - title: Application Details
-      required: [name, description, owner, system]
-      properties:
-        name:
-          title: Name
-          type: string
-          description: >-
-            Unique name for your app — becomes the GitLab repo name and
-            Kubernetes resource name (lowercase, hyphens only)
-          ui:autofocus: true
-          ui:field: EntityNamePicker
-        description:
-          title: Description
-          type: string
-          description: Short description of the application
-        owner:
-          title: Owner
-          type: string
-          description: "Backstage owner (e.g. user:guest or group:platform-engineering)"
-          ui:field: EntityPicker
-          ui:options:
-            catalogFilter:
-              kind: [User, Group]
-            allowArbitraryValues: true
-        system:
-          title: System
-          type: string
-          description: Backstage System this component belongs to
-          ui:field: EntityPicker
-          ui:options:
-            catalogFilter:
-              kind: System
-            allowArbitraryValues: true
+# Copy the full template directory (catalog-info.yaml, template.yaml,
+# skeleton/, gitops-skeleton/) as the catalog repo root.
+cp -r "${SOURCE_DIR}/catalog/templates/quarkus-web-template/." .
 
-  steps:
-    - id: fetchSource
-      name: Fetch Application Skeleton
-      action: fetch:template
-      input:
-        url: ./skeleton
-        values:
-          name: ${{ parameters.name }}
-          description: ${{ parameters.description }}
-          owner: ${{ parameters.owner }}
-          system: ${{ parameters.system }}
-          quayHost: ${{ globals.quayHost }}
-          repoUrl: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}
-          gitopsRepoUrl: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}-gitops
-          devspacesUrl: https://${{ globals.devspacesHost }}/#https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}
+git add -A
+git commit -m "Initial platform catalog seed"
+git push -u origin main
 
-    - id: publishSource
-      name: Publish Application Repository
-      action: publish:gitlab
-      input:
-        repoUrl: ${{ globals.gitlabHost }}?owner=software-factory%2Fapps&repo=${{ parameters.name }}
-        description: ${{ parameters.description }}
-        defaultBranch: main
-        gitCommitMessage: "feat: initial scaffold from golden path template"
-
-    - id: fetchGitops
-      name: Fetch GitOps Skeleton
-      action: fetch:template
-      input:
-        url: ./gitops-skeleton
-        targetPath: gitops
-        values:
-          name: ${{ parameters.name }}
-          quayHost: ${{ globals.quayHost }}
-          gitopsRepoUrl: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}-gitops
-
-    - id: publishGitops
-      name: Publish GitOps Repository
-      action: publish:gitlab
-      input:
-        repoUrl: ${{ globals.gitlabHost }}?owner=software-factory%2Fapps&repo=${{ parameters.name }}-gitops
-        description: "GitOps manifests for ${{ parameters.name }}"
-        defaultBranch: main
-        sourcePath: gitops
-        gitCommitMessage: "feat: initial gitops scaffold"
-
-    - id: createArgoApp
-      name: Create ArgoCD Application
-      action: http:backstage:request
-      input:
-        method: POST
-        path: /api/proxy/argocd/api/v1/applications
-        headers:
-          Content-Type: application/json
-        body:
-          metadata:
-            name: ${{ parameters.name }}-dev
-            namespace: openshift-gitops
-          spec:
-            project: apps
-            source:
-              repoURL: https://${{ globals.gitlabHost }}/software-factory/apps/${{ parameters.name }}-gitops
-              targetRevision: main
-              path: overlays/dev
-            destination:
-              server: https://kubernetes.default.svc
-              namespace: ${{ parameters.name }}-dev
-            syncPolicy:
-              automated:
-                prune: true
-                selfHeal: true
-              syncOptions:
-                - CreateNamespace=true
-
-    - id: register
-      name: Register in Catalog
-      action: catalog:register
-      input:
-        repoContentsUrl: ${{ steps.publishSource.output.repoContentsUrl }}
-        catalogInfoPath: /catalog-info.yaml
-
-  output:
-    links:
-      - title: Source Repository
-        url: ${{ steps.publishSource.output.remoteUrl }}
-        icon: gitlab
-      - title: GitOps Repository
-        url: ${{ steps.publishGitops.output.remoteUrl }}
-        icon: gitlab
-      - title: Open in Catalog
-        url: ${{ steps.register.output.entityRef }}
-        icon: catalog
-EOF
-)
-TEMPLATE_CONTENT_B64=$(printf '%s' "${TEMPLATE_CONTENT}" | base64 | tr -d '\n')
-
-curl -skf --max-time 15 \
-  -X POST "${GITLAB_URL}/api/v4/projects/${CATALOG_ID}/repository/files/template.yaml" \
-  -H "Authorization: Bearer ${OAUTH_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d "{\"branch\":\"main\",\"encoding\":\"base64\",\"content\":\"${TEMPLATE_CONTENT_B64}\",\"commit_message\":\"Initial template.yaml\"}" \
-  > /dev/null
+cd /
+rm -rf "${SOURCE_DIR}" "${WORK_DIR}"
 
 echo "Done. GitLab group structure initialized:"
 echo "  software-factory/ (id=${SF_ID})"

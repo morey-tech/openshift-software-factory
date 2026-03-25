@@ -81,10 +81,6 @@ APPS_DOMAIN=$(oc get ingresses.config.openshift.io cluster \
 GITLAB_URL="https://gitlab.${APPS_DOMAIN}"
 echo "GitLab URL: ${GITLAB_URL}"
 
-echo "Reading GitLab root password..."
-ROOT_PASSWORD=$(oc get secret "${GITLAB_SECRET_NAME}" -n "${GITLAB_SECRET_NAMESPACE}" \
-  -o jsonpath='{.data.password}' | base64 -d)
-
 echo "Waiting for GitLab to become healthy..."
 MAX_ATTEMPTS=120
 ATTEMPT=0
@@ -100,6 +96,10 @@ until curl -skf --max-time 5 "${GITLAB_URL}/-/health" &>/dev/null; do
   sleep 5
 done
 echo "GitLab is healthy."
+
+echo "Reading GitLab root password..."
+ROOT_PASSWORD=$(oc get secret "${GITLAB_SECRET_NAME}" -n "${GITLAB_SECRET_NAMESPACE}" \
+  -o jsonpath='{.data.password}' | base64 -d)
 
 echo "Obtaining OAuth token for root user..."
 OAUTH_RESPONSE=$(curl -skf --max-time 15 \

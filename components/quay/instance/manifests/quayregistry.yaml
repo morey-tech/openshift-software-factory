@@ -9,10 +9,21 @@ spec:
   components:
     - kind: quay
       managed: true
+      overrides:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
     - kind: postgres
       managed: true
     - kind: clair             # Vulnerability scanning — feeds into ACS pipeline gate (Phase 6)
       managed: true
+      overrides:
+        replicas: 2           # Default HPA scales to 10; cap at 2 for demo environment
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
     - kind: clairpostgres
       managed: true
     - kind: redis
